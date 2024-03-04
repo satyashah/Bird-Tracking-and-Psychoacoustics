@@ -26,7 +26,7 @@ if not ret:
     print("Can't receive frame (stream end?). Exiting ...")
     exit()
 
-# Wait for 2 seconds
+# Wait for 2 seconds 
 time.sleep(2)
 
 # Capture the second frame
