@@ -16,7 +16,7 @@ ret, frame = cap.read()
 # cv2.waitKey(0)
 
 # # Prompt the user to enter a name for the image
-image_name = "bird_neg2"
+image_name = "bird_fake_neg2"
 
 # # Print the shape of the frame
 print(frame.shape)
@@ -35,4 +35,4 @@ cv2.imwrite(f"test_images/{image_name}.jpg", cropped_frame)
 
 # Release the webcam and close all windows
 cap.release()
-cv2.destroyAllWindows()
+# cv2.destroyAllWindows()
