@@ -74,7 +74,6 @@ def get_bird(neg_baseline, img):
 
     return filtered_bird_frame, com
 
-
 def detect_pos_line(cleaned_pos_img):
     """
     This function takes a bird image and returns the average x coordinate of the bird.

@@ -111,12 +111,6 @@ def get_direction(bird_plot, com):
 
 
 
-
-
-
-
-
-
 bird_pos = cv2.imread('test_images/bird_fake_pos.jpg', 0)
 bird_neg1 = cv2.imread('test_images/bird_fake_neg.jpg', 0)
 bird_neg2 = cv2.imread('test_images/bird_fake_neg2.jpg', 0)
@@ -124,22 +118,22 @@ bird_right_less = cv2.imread('test_images/bird_fake_right_less.jpg', 0)
 bird_right = cv2.imread('test_images/bird_fake_right.jpg', 0)
 
 
+bird_img = bird_pos
 
-bird_right_plot, right_com = get_bird(bird_neg1, bird_pos)
+bird_plot, right_com = get_bird(bird_neg1, bird_img)
 
 
 
 
 # plt.imshow(bird_pos, cmap='gray')
-# point_arr = np.argwhere(bird_right_plot == 255)
+# point_arr = np.argwhere(bird_plot == 255)
 # plt.scatter(point_arr[:, 1], point_arr[:, 0], c = 'b')
 # plt.scatter(right_com[1], right_com[0], c='r')
 # plt.show()
 
 
 
-
-bird_angle = get_direction(bird_right_plot, right_com)
+bird_angle = get_direction(bird_plot, right_com)
 
 cv2.destroyAllWindows()
 
