@@ -132,7 +132,7 @@ def display_movie(video_path):
 
 
 # Path to the movie file
-video_path = "test_images/bird_v1_clip.mp4"  # Change this to the path of your movie file
+video_path = "test_content/bird_v1_clip.mp4"  # Change this to the path of your movie file
 
 # Call the function to display the movie
 display_movie(video_path)
