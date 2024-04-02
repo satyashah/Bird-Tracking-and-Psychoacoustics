@@ -46,6 +46,10 @@ if __name__ == "__main__":
 
     # # Wait for some time (e.g., 5 seconds)
     # time.sleep(5)
+    # # Wait for some time (e.g., 5 seconds)
+    # time.sleep(5)
 
+    # # Play sound from the second speaker
+    # play_sound(sound2_path, device_index=speaker2_index)
     # # Play sound from the second speaker
     # play_sound(sound2_path, device_index=speaker2_index)
