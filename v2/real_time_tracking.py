@@ -87,7 +87,6 @@ def get_direction(bird_plot, com):
 
     return angle, farthest_point, point_arr, distances
 
-
 def display_movie(video_path):
     # Open the video file
     cap = cv2.VideoCapture(video_path)
@@ -160,7 +159,8 @@ def display_movie(video_path):
     
 
 # Path to the movie file
-video_path = "test_images/bird_fake_mov.MOV"  # Change this to the path of your movie file
+#video_path = "test_content/old_content/bird_fake_mov.MOV"  # Change this to the path of your movie file
+video_path = "test_content/bird_v1_clip.mp4"  # Change this to the path of your movie file
 
 # Call the function to display the movie
 display_movie(video_path)

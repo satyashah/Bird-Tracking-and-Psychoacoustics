@@ -113,9 +113,12 @@ def display_movie(video_path):
         # Display the frame
         plt.clf()
         plt.imshow(cv2.cvtColor(cropped_frame, cv2.COLOR_BGR2RGB), cmap='gray')
-        plt.plot([FRAME_SIZE//2, beak_center_x], [FRAME_SIZE//2, beak_center_y], c='r')
+        # plt.plot([FRAME_SIZE//2, beak_center_x], [FRAME_SIZE//2, beak_center_y], c='r')
         # plt.scatter(red_indices[1], red_indices[0], s=1)
-        plt.scatter(FRAME_SIZE//2, FRAME_SIZE//2, c='r')
+        # plt.scatter(FRAME_SIZE//2, FRAME_SIZE//2, c='r')
+
+        plt.scatter(beak_center_x, beak_center_y, c='r')
+        plt.text(beak_center_x+20, beak_center_y-20, f'{angle:.2f}', color='black', fontsize=12, backgroundcolor='white')
         plt.pause(.00000001)
 
     plt.close()
