@@ -34,18 +34,23 @@ def play_sound(file_path, device_index=None):
 # Example usage
 if __name__ == "__main__":
     # Set the file paths for the two sounds
-    sound1_path = "test_sounds/Fanfare60.wav"
+    sound1_path = "test_sounds/PinkPanther60.wav"
     sound2_path = "test_sounds/StarWars60.wav"
 
     # Set the device indices for the two speakers
-    speaker1_index = 0  # Index of the first speaker
+    speaker1_index = 6  # Index of the first speaker
     speaker2_index = 1  # Index of the second speaker
+
+    # print(pyaudio.PyAudio().get_device_count())
+    # # Print all device info
+    # for i in range(pyaudio.PyAudio().get_device_count()):
+    #     print(pyaudio.PyAudio().get_device_info_by_index(i))
 
     # Play sound from the first speaker
     play_sound(sound1_path, device_index=speaker1_index)
 
-    # Wait for some time (e.g., 5 seconds)
-    time.sleep(5)
+    # # Wait for some time (e.g., 5 seconds)
+    # time.sleep(5)
 
-    # Play sound from the second speaker
-    play_sound(sound2_path, device_index=speaker2_index)
+    # # Play sound from the second speaker
+    # play_sound(sound2_path, device_index=speaker2_index)
