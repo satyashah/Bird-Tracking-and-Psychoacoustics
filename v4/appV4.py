@@ -1,7 +1,4 @@
-"""
-Application Description:
-    TBD
-"""
+
 from funcV4 import *
 import keyboard
 import pygame
