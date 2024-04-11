@@ -34,7 +34,7 @@ def set_up_cam():
             plt.close()
 
     plt.imshow(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), cmap='gray')
-    plt.title('Original Frame')
+    plt.title('Click on the Center of Bird')
 
     plt.gcf().canvas.mpl_connect('button_press_event', onclick)
     plt.show()
@@ -44,8 +44,6 @@ def set_up_cam():
 
     # This return is executed after the user clicks and the plot is closed
     return clicked_coordinates[-1]  # Return the last clicked coordinates
-
-    
 
 # Sound
 def set_up_sound(tone_sound_path, test_sound_paths):
