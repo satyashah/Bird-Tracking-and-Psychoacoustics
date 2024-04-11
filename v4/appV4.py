@@ -16,7 +16,7 @@ center_cords = (x, y)
 FRAME_SIZE = 400
 
 tone_sound_path = "test_sounds/pu995_ABCDEFG.wav"
-test_sound_paths = ["test_sounds/ZFAB.wav", "test_sounds/CanaryAB.wav", "test_sounds/StarWars60.wav"]
+test_sound_paths = ["test_sounds/ZFAB.wav", "test_sounds/CanaryAB.wav"]
 
 duration_milli_sec = 10000
 
