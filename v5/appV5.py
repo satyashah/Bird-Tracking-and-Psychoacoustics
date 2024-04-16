@@ -1,38 +1,32 @@
-from funcV4 import *
-import keyboard
-import pygame
-import pandas as pd
-import datetime
+from funcV5 import *
 
-from tabulate import tabulate
-import msvcrt
-import os
-from set_up_cam import center_cords as cc
-
-# # Params
-x,y = set_up_cam()
-center_cords = (x, y)
+# User Params [CHANGE THESE]
 FRAME_SIZE = 400
 
-tone_sound_path = "test_sounds/ABCD_perry.wav" #"test_sounds/pu995_ABCDEFG.wav"
-test_sound_paths = ["test_sounds/ABCD_perry.wav", "test_sounds/CanaryAB.wav"]
+left_sound_paths = ["test_sounds/ABCD_perry.wav", "test_sounds/CanaryAB.wav", "test_sounds/pu995_ABCDEFG.wav"] #
+right_sound_paths = ["test_sounds/ABCD_perry.wav", "test_sounds/CanaryAB.wav", "test_sounds/pu995_ABCDEFG.wav"]
 
 sound_duration = 1000
-data_collection_duration = 3000 # note this is including sound duration
+data_collection_duration = 3000 # note this starts at beginning of sound
+
+
+# System Params [DO NOT CHANGE]
+clear_terminal()
+
+x,y = set_up_cam()
+center_cords = (x, y)
 
 data_file_name = "test_data"
 
 # Setup Sound
+assert len(left_sound_paths) <= 3 or len(right_sound_paths) <= 3, "Error: Too many test sounds. Max 7 allowed"
+sound_arr = set_up_sound(left_sound_paths, right_sound_paths)
 
-assert len(test_sound_paths) < 8, "Error: Too many test sounds. Max 7 allowed"
-tone, sound_arr = set_up_sound(tone_sound_path, test_sound_paths)
-
-sound_names = create_sound_set(tone_sound_path, test_sound_paths)
+sound_names = create_sound_set(left_sound_paths, right_sound_paths)
 print("Sound Loaded:",sound_names)
 
 
 # Application
-
 sound_playing = "None"
 timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
@@ -48,7 +42,7 @@ start_time = time.time()
 
 STOP_SOUND_EVENT = pygame.USEREVENT + 1
 SUMMARIZE_EVENT = pygame.USEREVENT + 2
-clear_terminal = lambda: os.system('cls')
+
 
 while True:
     frame_num += 1
@@ -59,6 +53,7 @@ while True:
     except Exception as e:
         print(f"Error: {e}")
         continue
+
     # Save Data
     data_dict[frame_num] = {}
     data_dict[frame_num]["time"] = round(time.time() - start_time,2)
@@ -83,32 +78,27 @@ while True:
             key_num = int(key)
         
             if key_num == 0:
-                print("Exiting...")
+                print("\nExiting...\n")
                 pygame.mixer.stop()
                 break
+            else:
+                if key_num == 1 or key_num == 4 or key_num == 7:
+                    speaker_side = "left"
+                    arr_loc = key_num//3
+                elif key_num == 2 or key_num == 5 or key_num == 8:
+                    speaker_side = "right"
+                    arr_loc = (key_num-1)//3 + 3
+                else:
+                    assert False, "Error: Invalid key pressed"
 
-            if key_num == 1:
-
-                if sound_playing == "Tone":
+                if sound_playing == sound_names[arr_loc]:
                     data_dict[frame_num] = {'time': round(time.time() - start_time,2), 'angle': round(angle,2), 'X': beak_center[0] - FRAME_SIZE//2, 'Y': beak_center[1] - FRAME_SIZE//2, 'sound': "None"}
                     frame_num += 1
 
-                print(f"{sound_names[0]} Starting...\n")
+                print(f"\n{sound_names[arr_loc]} Starting on {speaker_side} Speaker...\n")
                 print(f"Initial \n\tAngle => {round(angle,2)} \n\tX => {beak_center[0] - FRAME_SIZE//2}\n")
-                play_sound(tone, "left", sound_duration, STOP_SOUND_EVENT, data_collection_duration, SUMMARIZE_EVENT)
-                sound_playing = "Tone"
-            
-            
-            if key_num > 1 and key_num <= len(sound_arr) + 1:
-
-                if sound_playing == sound_names[key_num-1]:
-                    data_dict[frame_num] = {'time': round(time.time() - start_time,2), 'angle': round(angle,2), 'X': beak_center[0] - FRAME_SIZE//2, 'Y': beak_center[1] - FRAME_SIZE//2, 'sound': "None"}
-                    frame_num += 1
-                
-                print(f"{sound_names[key_num-1]} Starting...\n")
-                print(f"Initial \n\tAngle => {round(angle,2)} \n\tX => {beak_center[0] - FRAME_SIZE//2}\n")
-                play_sound(sound_arr[key_num-2], "right", sound_duration, STOP_SOUND_EVENT, data_collection_duration, SUMMARIZE_EVENT)
-                sound_playing = sound_names[key_num-1]
+                play_sound(sound_arr[arr_loc], speaker_side, sound_duration, STOP_SOUND_EVENT, data_collection_duration, SUMMARIZE_EVENT)
+                sound_playing = sound_names[arr_loc]
             
             key = -1
 
@@ -123,8 +113,8 @@ df = pd.DataFrame(data_dict).T
 # df.to_csv(f"data/{data_file_name}_{timestamp}.csv", index=False)
 
 # Calculate mean and standard deviation for each sound group
-sound_stats = df.groupby('sound').agg({'angle': ['mean', 'std']})
+sound_stats = df.groupby('sound').agg({'angle': ['mean', 'std'], 'X': ['mean', 'std']})
 # Rename columns for clarity
-sound_stats.columns = ['mean_angle', 'std_dev_angle']
+sound_stats.columns = ['mean_angle', 'std_dev_angle', 'mean_X', 'std_dev_X']
 
 print(sound_stats)

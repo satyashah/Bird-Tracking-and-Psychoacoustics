@@ -15,6 +15,10 @@ from tabulate import tabulate
 import pygame
 
 import time
+import os
+import datetime
+import msvcrt
+
 
 
 # Set Up Camera
@@ -46,20 +50,19 @@ def set_up_cam():
     return clicked_coordinates[-1]  # Return the last clicked coordinates
 
 # Sound
-def set_up_sound(tone_sound_path, test_sound_paths):
+def set_up_sound(left_sound_paths, right_sound_paths):
     pygame.init()
     pygame.mixer.init(channels=2)
 
-    tone = pygame.mixer.Sound(tone_sound_path)
-
+    sound_paths = left_sound_paths + right_sound_paths
     soundArr = []
-    for sound_path in test_sound_paths:
+    for sound_path in sound_paths:
         soundArr.append(pygame.mixer.Sound(sound_path))
 
     pygame.mixer.Channel(0).set_volume(1.0, 0.0) # Full volume on left, mute on right
     pygame.mixer.Channel(1).set_volume(0.0, 1.0) # Mute on left, full volume on right
 
-    return tone, soundArr
+    return soundArr
 
 def play_sound(sound, speaker, sound_duration, event, data_collection_duration, summarize_event):
 
@@ -79,18 +82,18 @@ def play_sound(sound, speaker, sound_duration, event, data_collection_duration, 
 
     return
 
-def create_sound_set(tone_sound_path, test_sound_paths):
+def create_sound_set(left_sound_paths, right_sound_paths):
     # Dictionary to store sound paths
     sound_set = []
     
-    # Remove directory path and file extension for tone sound path
-    tone_sound = tone_sound_path.split("/")[-1].split(".")[0]
-    sound_set.append(f"tone_{tone_sound}")
-    
     # Remove directory path and file extension for each test sound path
-    test_sounds = [path.split("/")[-1].split(".")[0] for path in test_sound_paths]
-    for sound in test_sounds:
-        sound_set.append(f"{sound}")
+    left_sound_names = [path.split("/")[-1].split(".")[0] for path in left_sound_paths]
+    for sound_name in left_sound_names:
+        sound_set.append(f"L_{sound_name}")
+
+    right_sound_names = [path.split("/")[-1].split(".")[0] for path in right_sound_paths]
+    for sound_name in right_sound_names:
+        sound_set.append(f"R_{sound_name}")
     
     return sound_set
 
@@ -239,3 +242,7 @@ def summarize_data(data_dict, sound_name):
         ['Mean X', (f"{mean_X} +/- {std_X}") ], 
         ['Time', f"{start_time} - {end_time}"]
     ], headers=['', sound_name], tablefmt='grid'))
+
+
+# Other
+clear_terminal = lambda: os.system('cls')
