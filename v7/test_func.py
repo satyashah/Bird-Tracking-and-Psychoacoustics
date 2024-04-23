@@ -2,6 +2,8 @@ import wave
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
+
 import math
 
 from pydub import AudioSegment
@@ -18,6 +20,10 @@ import time
 import os
 import datetime
 import msvcrt
+
+import random
+import time
+from scipy.stats import norm
 
 
 
@@ -50,19 +56,22 @@ def set_up_cam():
     return clicked_coordinates[-1]  # Return the last clicked coordinates
 
 # Sound
-def set_up_sound(left_sound_paths, right_sound_paths):
+def set_up_sound(sound_A_path, sound_B_path):
     pygame.init()
     pygame.mixer.init(channels=2)
 
-    sound_paths = left_sound_paths + right_sound_paths
-    soundArr = []
-    for sound_path in sound_paths:
-        soundArr.append(pygame.mixer.Sound(sound_path))
+    sound_set = {}
+
+    sound_A_names = sound_A_path.split("/")[-1].split(".")[0] 
+    sound_set[sound_A_names] = pygame.mixer.Sound(sound_A_path)
+
+    sound_B_names = sound_B_path.split("/")[-1].split(".")[0]
+    sound_set[sound_B_names] = pygame.mixer.Sound(sound_B_path)
 
     pygame.mixer.Channel(0).set_volume(1.0, 0.0) # Full volume on left, mute on right
     pygame.mixer.Channel(1).set_volume(0.0, 1.0) # Mute on left, full volume on right
 
-    return soundArr
+    return sound_set
 
 def play_sound(sound, speaker, sound_duration, event, data_collection_duration, summarize_event):
 
@@ -81,21 +90,6 @@ def play_sound(sound, speaker, sound_duration, event, data_collection_duration, 
     pygame.time.set_timer(summarize_event, data_collection_duration, loops=1)
 
     return
-
-def create_sound_set(left_sound_paths, right_sound_paths):
-    # Dictionary to store sound paths
-    sound_set = []
-    
-    # Remove directory path and file extension for each test sound path
-    left_sound_names = [path.split("/")[-1].split(".")[0] for path in left_sound_paths]
-    for sound_name in left_sound_names:
-        sound_set.append(f"L_{sound_name}")
-
-    right_sound_names = [path.split("/")[-1].split(".")[0] for path in right_sound_paths]
-    for sound_name in right_sound_names:
-        sound_set.append(f"R_{sound_name}")
-    
-    return sound_set
 
 # Frame
 def crop(FRAME_SIZE, CENTER, frame):
@@ -191,20 +185,22 @@ def display_camara(cap, center_cords, FRAME_SIZE):
     
     return cropped_frame, angle, (beak_center_x, beak_center_y)
         
-def plot_bird(cropped_frame, beak_center, angle, frame_size):
-    plt.clf()
-    plt.imshow(cv2.cvtColor(cropped_frame, cv2.COLOR_BGR2RGB), cmap='gray')
-    plt.scatter(frame_size//2, frame_size//2, c='r')
-    # plt.scatter(red_indices[1], red_indices[0], s=1)
+# Function to plot bird
+def plot_bird(cropped_frame, beak_center, angle, frame_size, ax):
+    ax.clear()
+    ax.imshow(cv2.cvtColor(cropped_frame, cv2.COLOR_BGR2RGB), cmap='gray')
+    ax.scatter(frame_size//2, frame_size//2, c='r')
 
     if not math.isnan(angle):
-        plt.plot([frame_size//2, beak_center[0]], [frame_size//2, beak_center[1]], c='r')
-        plt.scatter(beak_center[0], beak_center[1], c='r')
-        #plt.text(beak_center[0]+20, beak_center[1]-20, f'{angle:.2f}', color='black', fontsize=12, backgroundcolor='white')
-        plt.text(280, 50, f'Ang: {angle:.2f}\nX: {beak_center[0] - frame_size//2:.2f}', color='black', fontsize=12, backgroundcolor='white')
-        # plt.text(280, 50, f'X: {beak_center[0] - frame_size//2:.2f}', color='black', fontsize=12, backgroundcolor='white')
-
+        ax.plot([frame_size//2, beak_center[0]], [frame_size//2, beak_center[1]], c='r')
+        ax.scatter(beak_center[0], beak_center[1], c='r')
+        ax.text(280, 50, f'Ang: {angle:.2f}\nX: {beak_center[0] - frame_size//2:.2f}', color='black', fontsize=12, backgroundcolor='white')
+    
     plt.pause(.00000001)
+
+
+
+
 
 
 # Data
@@ -243,59 +239,81 @@ def summarize_data(data_dict, sound_name):
         ['Time', f"{start_time} - {end_time}"]
     ], headers=['', sound_name], tablefmt='grid'))
 
+    return mean_angle, std_angle, mean_X, std_X
+
+def plot_mean(sound_set, data_dict, last_data_point, axs):
+
+    df = pd.DataFrame(data_dict).T
+    resolution = 90
+
+    if last_data_point["sound"] == list(sound_set.keys())[0]:
+        axs[0].set_title(list(sound_set.keys())[0])
+        axs[0].set_ylim([-resolution, resolution])
+        axs[0].plot(last_data_point["sound_index"], last_data_point["angle"], marker='o', markersize=2, color='blue', label='Added Point')
+
+    
+    elif last_data_point["sound"] == list(sound_set.keys())[1]:
+        axs[1].set_title(list(sound_set.keys())[1])
+        axs[1].set_ylim([-resolution, resolution])
+        axs[1].plot(last_data_point["sound_index"], last_data_point["angle"], marker='o', markersize=2, color='orange', label='Added Point')
+    
+
+    elif len(df) > 2 and df.iloc[-2]["sound"] != last_data_point["sound"]:
+        if df.iloc[-2]["sound"] == list(sound_set.keys())[0]:
+            axs[0].clear()
+            axs[0].set_title(list(sound_set.keys())[0])
+            axs[0].set_ylim([-resolution, resolution])
+            filtered_df = df[df['sound'] == list(sound_set.keys())[0]]
+            if len(filtered_df) > 1:
+                average_values = filtered_df.groupby(filtered_df.sound_index)["angle"].mean().iloc[:-3] # Remove last 3 for accuracy
+                axs[0].set_xlim([0, len(average_values)])
+                axs[0].plot(average_values.index, average_values.values, marker='o', markersize=2, color='purple', label='Average Angle')
+                axs[0].axhline(y=sum(average_values.values)/len(average_values.values), color='black', linestyle='--')
+        else:
+            axs[1].clear()
+            axs[1].set_title(list(sound_set.keys())[1])
+            axs[1].set_ylim([-resolution, resolution])
+            filtered_df = df[df['sound'] == list(sound_set.keys())[1]]
+            if len(filtered_df) > 1:
+                average_values = filtered_df.groupby(filtered_df.sound_index)["angle"].mean().iloc[:-3]
+                axs[1].set_xlim([0, len(average_values)])
+                axs[1].plot(average_values.index, average_values.values, marker='o', markersize=2, color='red', label='Average Angle')
+                axs[1].axhline(y=sum(average_values.values)/len(average_values.values), color='black', linestyle='--')
+    
+    return
+
+def plot_final(data_dict, sound_set):
+    fig = plt.figure(figsize=(15, 8))
+    gs = gridspec.GridSpec(2, 1, height_ratios=[1,1]) # Create a grid with 2 rows and 1 column
+
+    ax_top = fig.add_subplot(gs[0, 0]) # Add the first subplot to the first row
+    ax_bottom = fig.add_subplot(gs[1, 0]) # Add the second subplot to the second row
+    
+    df = pd.DataFrame(data_dict).T
+    axs = [ax_top, ax_bottom]
+
+    axs[0].clear()
+    axs[0].set_title(list(sound_set.keys())[0])
+    axs[0].set_ylim([-120, 120])
+    filtered_df = df[df['sound'] == list(sound_set.keys())[0]]
+    if len(filtered_df) > 1:
+        average_values = filtered_df.groupby(filtered_df.sound_index)["angle"].mean().iloc[:-3] # Remove last 3 for accuracy
+        axs[0].set_xlim([0, len(average_values)])
+        axs[0].plot(average_values.index, average_values.values, marker='o', markersize=2, color='purple', label='Average Angle')
+        axs[0].axhline(y=sum(average_values.values)/len(average_values.values), color='black', linestyle='--')
+
+    axs[1].clear()
+    axs[1].set_title(list(sound_set.keys())[1])
+    axs[1].set_ylim([-120, 120])
+    filtered_df = df[df['sound'] == list(sound_set.keys())[1]]
+    if len(filtered_df) > 1:
+        average_values = filtered_df.groupby(filtered_df.sound_index)["angle"].mean().iloc[:-3]
+        axs[1].set_xlim([0, len(average_values)])
+        axs[1].plot(average_values.index, average_values.values, marker='o', markersize=2, color='red', label='Average Angle')
+        axs[1].axhline(y=sum(average_values.values)/len(average_values.values), color='black', linestyle='--')
+
+    plt.show()
 
 # Other
 clear_terminal = lambda: os.system('cls')
 
-def get_time_plots(df):
-
-    fig, axs = plt.subplots(2, 1, figsize=(8, 8))
-
-    # Plotting angle over time
-    for sound, group in df.groupby('sound'):
-        axs[0].plot(group['time'], group['angle'], marker='o', linestyle='', label=sound)
-    axs[0].set_title('Angle Over Time')
-    axs[0].set_xlabel('Time')
-    axs[0].set_ylabel('Angle')
-    axs[0].legend()
-    axs[0].grid(True)
-
-    # Plotting X over time
-    for sound, group in df.groupby('sound'):
-        axs[1].plot(group['time'], group['X'], marker='o', linestyle='', label=sound)
-    axs[1].set_title('X Over Time')
-    axs[1].set_xlabel('Time')
-    axs[1].set_ylabel('X')
-    axs[1].legend()
-    axs[1].grid(True)
-
-    plt.tight_layout()  # Adjust subplot layout to prevent overlap
-    plt.show()
-
-def plot_summarized_data(summarized_df):
-    # Determine the number of bars and the width of each bar
-    n_bars = len(summarized_df)
-    bar_width = 0.35
-
-    # Set the x positions for the bars
-    x_pos = np.arange(n_bars)
-
-    # Plotting summarized data (bar graph)
-    plt.figure(figsize=(10, 5))
-
-    # Plot mean angle data
-    plt.bar(x_pos - bar_width/2, summarized_df['mean_angle'], yerr=summarized_df['std_dev_angle'], width=bar_width,
-            color='orange', alpha=0.75, label='Angle')
-
-    # Plot mean X data
-    plt.bar(x_pos + bar_width/2, summarized_df['mean_X'], yerr=summarized_df['std_dev_X'], width=bar_width,
-            color='blue', alpha=0.75, label='X')
-
-    plt.title('Summarized Data')
-    plt.xlabel('Sound')
-    plt.ylabel('Value')
-    plt.xticks(x_pos, summarized_df.index, rotation=45)
-    plt.legend()
-    plt.grid(axis='y')
-    plt.tight_layout()
-    plt.show()

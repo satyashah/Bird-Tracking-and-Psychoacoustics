@@ -1,7 +1,7 @@
 from funcV5 import *
 
 # User Params [CHANGE THESE]
-FRAME_SIZE = 400
+FRAME_SIZE = 200
 
 left_sound_paths = ["test_sounds/ABCD_perry.wav", "test_sounds/CanaryAB.wav", "test_sounds/pu995_ABCDEFG.wav"] #
 right_sound_paths = ["test_sounds/ABCD_perry.wav", "test_sounds/CanaryAB.wav", "test_sounds/pu995_ABCDEFG.wav"]
@@ -18,6 +18,14 @@ center_cords = (x, y)
 
 data_file_name = "test_data"
 
+STOP_SOUND_EVENT = pygame.USEREVENT + 1
+SUMMARIZE_EVENT = pygame.USEREVENT + 2
+
+frame_num = 0
+data_dict = {}
+start_time = time.time()
+sound_playing = "Blank"
+
 # Setup Sound
 assert len(left_sound_paths) <= 3 or len(right_sound_paths) <= 3, "Error: Too many test sounds. Max 7 allowed"
 sound_arr = set_up_sound(left_sound_paths, right_sound_paths)
@@ -27,22 +35,12 @@ print("Sound Loaded:",sound_names)
 
 
 # Application
-sound_playing = "None"
 timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-
 print(f"Application started... {timestamp}")
+
 # Live Feed
 cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-print("Error: Could not open video.") if not cap.isOpened() else None
 ret, frame = cap.read(0) # Remove first frame
-
-frame_num = 0
-data_dict = {}
-start_time = time.time()
-
-STOP_SOUND_EVENT = pygame.USEREVENT + 1
-SUMMARIZE_EVENT = pygame.USEREVENT + 2
-
 
 while True:
     frame_num += 1
@@ -69,7 +67,7 @@ while True:
 
         if event.type == SUMMARIZE_EVENT:
             summarize_data(data_dict, sound_playing)
-            sound_playing = "None"
+            sound_playing = "Blank"
     
     if msvcrt.kbhit():  # Check if a key has been pressed
         clear_terminal()
@@ -104,17 +102,20 @@ while True:
 
     #time.sleep(0.1)
 
-
+plt.close()
     
 
         
 # Save Data
 df = pd.DataFrame(data_dict).T
-# df.to_csv(f"data/{data_file_name}_{timestamp}.csv", index=False)
+df.to_csv(f"data/{data_file_name}_{timestamp}.csv", index=False)
 
 # Calculate mean and standard deviation for each sound group
 sound_stats = df.groupby('sound').agg({'angle': ['mean', 'std'], 'X': ['mean', 'std']})
 # Rename columns for clarity
 sound_stats.columns = ['mean_angle', 'std_dev_angle', 'mean_X', 'std_dev_X']
-
 print(sound_stats)
+
+get_time_plots(df)
+plot_summarized_data(sound_stats)
+
