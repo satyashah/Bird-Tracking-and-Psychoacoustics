@@ -7,10 +7,10 @@ sound_B_path = "test_sounds/ZFAB.wav"
 
 sound_duration = 1000
 data_collection_duration = 3000 # note this starts at beginning of sound
-time_between_sounds = 5000
+time_between_sounds = 2000
 
 
-stable_threshold = (-20, 20, 0.5) # (min, max, time to be stable for)
+stable_threshold = (-20, 20, 500) # (min, max, time (ms) to be stable for)
 
 
 # System Params [DO NOT CHANGE]
@@ -33,6 +33,9 @@ last_stable_time = time.time()
 sound_playing = "Blank"
 rand_side = "neither"
 running_test = False
+override = False
+data_collection_duration = data_collection_duration + 500
+
 
 # Setup Sound
 sound_set = set_up_sound(sound_A_path, sound_B_path)
@@ -66,9 +69,10 @@ while True:
         last_stable_time = time.time()
 
     # Start the test if the bird is stable and a test is not already running
-    if not running_test and time.time() - last_stable_time > stable_threshold[2]:
+    if override or (not running_test and time.time() - last_stable_time > stable_threshold[2]/1000):
         print("Bird is stable") 
         running_test = True
+        override = False
 
         rand_sound = random.choice(list(sound_set.keys()))
         rand_side = random.choice(["left", "right"])
@@ -126,12 +130,19 @@ while True:
             print("Resuming...")
             last_stable_time = time.time()
             running_test = False
+            override = False
     
     # Check for user input
     if msvcrt.kbhit():
         key = msvcrt.getch()
         if key.isdigit():
-            break
+            key_num = int(key)
+            if key_num == 0:
+                print("\nExiting...\n")
+                break
+            elif key_num == 1:
+                print("\nOverriding...\n")
+                override = True
     
 
 # Save Data
@@ -145,7 +156,7 @@ sound_stats.columns = ['mean_angle', 'std_dev_angle', 'mean_X', 'std_dev_X']
 print(sound_stats)
 
 plt.close()
-plot_final(data_dict, sound_set)
+# plot_final(data_dict, sound_set)
 
 
 

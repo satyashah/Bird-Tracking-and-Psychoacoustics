@@ -26,7 +26,6 @@ import time
 from scipy.stats import norm
 
 
-
 # Set Up Camera
 def set_up_cam():
     # Live Feed
@@ -198,11 +197,6 @@ def plot_bird(cropped_frame, beak_center, angle, frame_size, ax):
     
     plt.pause(.00000001)
 
-
-
-
-
-
 # Data
 def summarize_data(data_dict, sound_name):
     df = pd.DataFrame(data_dict).T
@@ -265,25 +259,37 @@ def plot_mean(sound_set, data_dict, last_data_point, axs, duration):
     time_step = 0.115
     sound_keys = list(sound_set.keys())
 
+    def get_sound_count(sound_key):
+        filtered_df = df[df['sound'] == sound_key]
+        if len(filtered_df) > 1:
+            grouped_values = filtered_df.groupby(filtered_df.sound_index).agg({'angle': ['size']})
+            return grouped_values['angle']['size'].iloc[0]
+        else:
+            return 0
+
     def plot_single_sound(ax, sound_key, color):
-        ax.set_title(sound_key)
-        ax.set_xlabel('Time (s)')
+        ax.set_title(f"{sound_key} ({get_sound_count(sound_key)})")
+        ax.set_xlabel('Time (ms)')
         ax.set_ylabel('Mean Angle')
         ax.set_ylim([-resolution, resolution])
-        ax.plot(last_data_point["sound_index"]*time_step, last_data_point["angle"], marker='o', markersize=2, color=color, label='Added Point')
+        ax.set_xlim([0, duration-500])
+        ax.plot(1000*last_data_point["sound_index"]*time_step, last_data_point["angle"], marker='o', markersize=2, color=color, label='Added Point')
 
     def plot_average_sound(ax, sound_key, color):
         ax.clear()
-        ax.set_title(sound_key)
-        ax.set_xlabel('Time (s)')
+        ax.set_title(f"{sound_key} ({get_sound_count(sound_key)})")
+        ax.set_xlabel('Time (ms)')
         ax.set_ylabel('Mean Angle')
         ax.set_ylim([-resolution, resolution])
+        ax.set_xlim([0, duration-500])
         filtered_df = df[df['sound'] == sound_key]
         if len(filtered_df) > 1:
-            average_values = filtered_df.groupby(filtered_df.sound_index)["angle"].mean().iloc[:-3] # Remove last 3 for accuracy
-            ax.set_xlim([0, len(average_values)*time_step])
-            ax.plot(average_values.index*time_step, average_values.values, color=color, label='Average Angle')
-            ax.axhline(y=sum(average_values.values)/len(average_values.values), color='black', linestyle='--')
+            average_values = filtered_df.groupby(filtered_df.sound_index)["angle"].mean()
+            error_values = filtered_df.groupby(filtered_df.sound_index)["angle"].std(ddof=0)
+            ax.plot(1000*average_values.index*time_step, average_values.values, color=color, label='Average Angle')
+            ax.fill_between(list(1000*average_values.index*time_step), list(average_values.values-error_values.values), list(average_values.values+error_values.values), color=color, alpha=0.2)
+            #ax.axhline(y=sum(average_values.values)/len(average_values.values), color='black', linestyle='--')
+            #ax.axhline(y=0, color='black', linestyle='-')
 
     if last_data_point["sound"] == sound_keys[0]:
         plot_single_sound(axs[0], sound_keys[0], 'blue')
