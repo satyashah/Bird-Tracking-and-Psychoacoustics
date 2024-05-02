@@ -2,12 +2,12 @@ from funcV7 import *
 
 # User Params [CHANGE THESE]
 FRAME_SIZE = 400
-sound_A_path = "test_sounds/ABCD_perry.wav"
+sound_A_path = "test_sounds/ABCD_perry.wav"  
 sound_B_path = "test_sounds/ZFAB.wav"
 
 sound_duration = 1000
 data_collection_duration = 3000 # note this starts at beginning of sound
-time_between_sounds = 2000
+time_between_sounds = 5000
 
 
 stable_threshold = (-20, 20, 500) # (min, max, time (ms) to be stable for)
@@ -39,7 +39,7 @@ data_collection_duration = data_collection_duration + 500
 
 # Setup Sound
 sound_set = set_up_sound(sound_A_path, sound_B_path)
-print("Sound Loaded:",sound_set.keys())
+print("Sound Loaded:", sound_set.keys())
 
 # Application
 timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -74,7 +74,8 @@ while True:
         running_test = True
         override = False
 
-        rand_sound = random.choice(list(sound_set.keys()))
+        sound_keys = list(sound_set.keys())
+        rand_sound = random.choices(sound_keys, weights=get_weight(sound_keys[0], sound_keys[1], data_dict))[0]
         rand_side = random.choice(["left", "right"])
 
         # Run code to play sound

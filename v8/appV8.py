@@ -1,24 +1,23 @@
-from test_func import *
+from funcV8 import *
 
 # User Params [CHANGE THESE]
 FRAME_SIZE = 400
-
 sound_A_path = "test_sounds/ABCD_perry.wav"
 sound_B_path = "test_sounds/ZFAB.wav"
 
-sound_duration = 2000
+sound_duration = 1000
 data_collection_duration = 3000 # note this starts at beginning of sound
-time_between_sounds = 2000
+time_between_sounds = 5000
 
 
-stable_threshold = (-20, 20, .5) # (min, max, time to be stable for)
-last_stable_time = time.time()
+stable_threshold = (-20, 20, 500) # (min, max, time (ms) to be stable for)
+
 
 # System Params [DO NOT CHANGE]
 clear_terminal()
 
 x,y = set_up_cam()
-center_cords =  (x, y)#(337, 211)
+center_cords =  (x, y)
 
 data_file_name = "test_data"
 
@@ -30,13 +29,17 @@ frame_num = 0
 sound_frame = 0
 data_dict = {}
 start_time = time.time()
+last_stable_time = time.time()
 sound_playing = "Blank"
 rand_side = "neither"
+running_test = False
+override = False
+data_collection_duration = data_collection_duration + 500
+
 
 # Setup Sound
 sound_set = set_up_sound(sound_A_path, sound_B_path)
-print("Sound Loaded:",sound_set.keys())
-
+print("Sound Loaded:", sound_set.keys())
 
 # Application
 timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -46,33 +49,19 @@ print(f"Application started... {timestamp}")
 cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 ret, frame = cap.read(0) # Remove first frame
 
-running_test = False
-
-
-# Create a figure with two subplots
-
-fig = plt.figure(figsize=(15, 8))
-gs = gridspec.GridSpec(3, 2, width_ratios=[2, 2], height_ratios=[1, 6, 6])
-
-ax_top = fig.add_subplot(gs[0, :])
-ax_left = fig.add_subplot(gs[1:3, 0])
-ax_top_right = fig.add_subplot(gs[1, 1])
-ax_bottom_right = fig.add_subplot(gs[2, 1])
-
-
-plotA = ax_left
-plotB = [ax_top_right, ax_bottom_right]
-plt.tight_layout(pad=2)
+# Create a figure with two subplots and top section
+top_info, bird_plot, data_graphs_2 = build_plot()
 
 while True:
+    
     frame_num += 1
     
-    ax_top.clear()
-    ax_top.axis("off")
-    ax_top.text(0.5, 0.5, f"Playing {sound_playing} from {rand_side} side", fontsize=20, ha="center", va="center")
+    top_info.clear()
+    top_info.axis("off")
+    top_info.text(0.5, 0.5, f"Playing {sound_playing} from {rand_side} side", fontsize=20, ha="center", va="center")
     
     cropped_frame, angle, beak_center = display_camara(cap, center_cords, FRAME_SIZE)
-    plot_bird(cropped_frame, beak_center, angle, FRAME_SIZE, plotA)
+    plot_bird(cropped_frame, beak_center, angle, FRAME_SIZE, bird_plot)
 
 
     # Reset the timer if the bird is not stable
@@ -80,11 +69,13 @@ while True:
         last_stable_time = time.time()
 
     # Start the test if the bird is stable and a test is not already running
-    if not running_test and time.time() - last_stable_time > stable_threshold[2]:
+    if override or (not running_test and time.time() - last_stable_time > stable_threshold[2]/1000):
         print("Bird is stable") 
         running_test = True
+        override = False
 
-        rand_sound = random.choice(list(sound_set.keys()))
+        sound_keys = list(sound_set.keys())
+        rand_sound = random.choices(sound_keys, weights=get_weight(sound_keys[0], sound_keys[1], data_dict))[0]
         rand_side = random.choice(["left", "right"])
 
         # Run code to play sound
@@ -121,7 +112,7 @@ while True:
     data_dict[frame_num]["sound"] = sound_playing
     data_dict[frame_num]["side"] = rand_side
 
-    plot_mean(sound_set, data_dict, data_dict[frame_num], plotB)
+    plot_mean(sound_set, data_dict, data_dict[frame_num], data_graphs_2, data_collection_duration)
     
     # Events to maintain the application
     for event in pygame.event.get():
@@ -140,14 +131,20 @@ while True:
             print("Resuming...")
             last_stable_time = time.time()
             running_test = False
+            override = False
     
     # Check for user input
     if msvcrt.kbhit():
         key = msvcrt.getch()
         if key.isdigit():
-            break
+            key_num = int(key)
+            if key_num == 0:
+                print("\nExiting...\n")
+                break
+            elif key_num == 1:
+                print("\nOverriding...\n")
+                override = True
     
-
 
 # Save Data
 df = pd.DataFrame(data_dict).T
@@ -160,7 +157,7 @@ sound_stats.columns = ['mean_angle', 'std_dev_angle', 'mean_X', 'std_dev_X']
 print(sound_stats)
 
 plt.close()
-plot_final(data_dict, sound_set)
+# plot_final(data_dict, sound_set)
 
 
 

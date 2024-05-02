@@ -253,22 +253,27 @@ def build_plot():
 
     return top_info, bird_plot, data_graphs_2
 
+def get_sound_count(sound_key, data_dict):
+    df = pd.DataFrame(data_dict).T
+
+    if len(df) == 0:
+        return 0
+    
+    filtered_df = df[df['sound'] == sound_key]
+    if len(filtered_df) > 1:
+        grouped_values = filtered_df.groupby(filtered_df.sound_index).agg({'angle': ['size']})
+        return grouped_values['angle']['size'].iloc[0]
+    else:
+        return 0
+        
 def plot_mean(sound_set, data_dict, last_data_point, axs, duration):
     df = pd.DataFrame(data_dict).T
-    resolution = 90
+    resolution = 120
     time_step = 0.115
     sound_keys = list(sound_set.keys())
 
-    def get_sound_count(sound_key):
-        filtered_df = df[df['sound'] == sound_key]
-        if len(filtered_df) > 1:
-            grouped_values = filtered_df.groupby(filtered_df.sound_index).agg({'angle': ['size']})
-            return grouped_values['angle']['size'].iloc[0]
-        else:
-            return 0
-
     def plot_single_sound(ax, sound_key, color):
-        ax.set_title(f"{sound_key} ({get_sound_count(sound_key)})")
+        ax.set_title(f"{sound_key} ({get_sound_count(sound_key, data_dict)})")
         ax.set_xlabel('Time (ms)')
         ax.set_ylabel('Mean Angle')
         ax.set_ylim([-resolution, resolution])
@@ -277,7 +282,7 @@ def plot_mean(sound_set, data_dict, last_data_point, axs, duration):
 
     def plot_average_sound(ax, sound_key, color):
         ax.clear()
-        ax.set_title(f"{sound_key} ({get_sound_count(sound_key)})")
+        ax.set_title(f"{sound_key} ({get_sound_count(sound_key, data_dict)})")
         ax.set_xlabel('Time (ms)')
         ax.set_ylabel('Mean Angle')
         ax.set_ylim([-resolution, resolution])
@@ -338,3 +343,13 @@ def plot_final(data_dict, sound_set):
 # Other
 clear_terminal = lambda: os.system('cls')
 
+def get_weight(sound_A, sound_B, df):
+    
+    A_count = get_sound_count(sound_A, df)
+    B_count = get_sound_count(sound_B, df)
+
+    count_dif = 1/(abs(A_count - B_count) + 2)
+    A_weight = count_dif if A_count > B_count else 1 - count_dif
+    B_weight = 1 - count_dif if A_count > B_count else count_dif
+
+    return [A_weight, B_weight]

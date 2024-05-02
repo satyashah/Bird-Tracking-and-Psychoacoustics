@@ -26,7 +26,6 @@ import time
 from scipy.stats import norm
 
 
-
 # Set Up Camera
 def set_up_cam():
     # Live Feed
@@ -198,11 +197,6 @@ def plot_bird(cropped_frame, beak_center, angle, frame_size, ax):
     
     plt.pause(.00000001)
 
-
-
-
-
-
 # Data
 def summarize_data(data_dict, sound_name):
     df = pd.DataFrame(data_dict).T
@@ -241,45 +235,77 @@ def summarize_data(data_dict, sound_name):
 
     return mean_angle, std_angle, mean_X, std_X
 
-def plot_mean(sound_set, data_dict, last_data_point, axs):
+# Continous Data Plotting
+def build_plot():
+    fig = plt.figure(figsize=(15, 8))
+    gs = gridspec.GridSpec(3, 2, width_ratios=[2, 2], height_ratios=[1, 6, 6])
 
+    top_info = fig.add_subplot(gs[0, :])
+    ax_left = fig.add_subplot(gs[1:3, 0])
+    ax_top_right = fig.add_subplot(gs[1, 1])
+    ax_bottom_right = fig.add_subplot(gs[2, 1])
+
+
+    bird_plot = ax_left
+    data_graphs_2 = [ax_top_right, ax_bottom_right]
+
+    plt.tight_layout(pad=3)
+
+    return top_info, bird_plot, data_graphs_2
+
+def get_sound_count(sound_key, data_dict):
     df = pd.DataFrame(data_dict).T
-    resolution = 90
 
-    if last_data_point["sound"] == list(sound_set.keys())[0]:
-        axs[0].set_title(list(sound_set.keys())[0])
-        axs[0].set_ylim([-resolution, resolution])
-        axs[0].plot(last_data_point["sound_index"], last_data_point["angle"], marker='o', markersize=2, color='blue', label='Added Point')
-
+    if len(df) == 0:
+        return 0
     
-    elif last_data_point["sound"] == list(sound_set.keys())[1]:
-        axs[1].set_title(list(sound_set.keys())[1])
-        axs[1].set_ylim([-resolution, resolution])
-        axs[1].plot(last_data_point["sound_index"], last_data_point["angle"], marker='o', markersize=2, color='orange', label='Added Point')
-    
+    filtered_df = df[df['sound'] == sound_key]
+    if len(filtered_df) > 1:
+        grouped_values = filtered_df.groupby(filtered_df.sound_index).agg({'angle': ['size']})
+        return grouped_values['angle']['size'].iloc[0]
+    else:
+        return 0
+        
+def plot_mean(sound_set, data_dict, last_data_point, axs, duration):
+    df = pd.DataFrame(data_dict).T
+    resolution = 120
+    time_step = 0.115
+    sound_keys = list(sound_set.keys())
 
+    def plot_single_sound(ax, sound_key, color):
+        ax.set_title(f"{sound_key} ({get_sound_count(sound_key, data_dict)})")
+        ax.set_xlabel('Time (ms)')
+        ax.set_ylabel('Mean Angle')
+        ax.set_ylim([-resolution, resolution])
+        ax.set_xlim([0, duration-500])
+        ax.plot(1000*last_data_point["sound_index"]*time_step, last_data_point["angle"], marker='o', markersize=2, color=color, label='Added Point')
+
+    def plot_average_sound(ax, sound_key, color):
+        ax.clear()
+        ax.set_title(f"{sound_key} ({get_sound_count(sound_key, data_dict)})")
+        ax.set_xlabel('Time (ms)')
+        ax.set_ylabel('Mean Angle')
+        ax.set_ylim([-resolution, resolution])
+        ax.set_xlim([0, duration-500])
+        filtered_df = df[df['sound'] == sound_key]
+        if len(filtered_df) > 1:
+            average_values = filtered_df.groupby(filtered_df.sound_index)["angle"].mean()
+            error_values = filtered_df.groupby(filtered_df.sound_index)["angle"].std(ddof=0)
+            ax.plot(1000*average_values.index*time_step, average_values.values, color=color, label='Average Angle')
+            ax.fill_between(list(1000*average_values.index*time_step), list(average_values.values-error_values.values), list(average_values.values+error_values.values), color=color, alpha=0.2)
+            #ax.axhline(y=sum(average_values.values)/len(average_values.values), color='black', linestyle='--')
+            #ax.axhline(y=0, color='black', linestyle='-')
+
+    if last_data_point["sound"] == sound_keys[0]:
+        plot_single_sound(axs[0], sound_keys[0], 'blue')
+    elif last_data_point["sound"] == sound_keys[1]:
+        plot_single_sound(axs[1], sound_keys[1], 'orange')
     elif len(df) > 2 and df.iloc[-2]["sound"] != last_data_point["sound"]:
-        if df.iloc[-2]["sound"] == list(sound_set.keys())[0]:
-            axs[0].clear()
-            axs[0].set_title(list(sound_set.keys())[0])
-            axs[0].set_ylim([-resolution, resolution])
-            filtered_df = df[df['sound'] == list(sound_set.keys())[0]]
-            if len(filtered_df) > 1:
-                average_values = filtered_df.groupby(filtered_df.sound_index)["angle"].mean().iloc[:-3] # Remove last 3 for accuracy
-                axs[0].set_xlim([0, len(average_values)])
-                axs[0].plot(average_values.index, average_values.values, marker='o', markersize=2, color='purple', label='Average Angle')
-                axs[0].axhline(y=sum(average_values.values)/len(average_values.values), color='black', linestyle='--')
+        if df.iloc[-2]["sound"] == sound_keys[0]:
+            plot_average_sound(axs[0], sound_keys[0], 'purple')
         else:
-            axs[1].clear()
-            axs[1].set_title(list(sound_set.keys())[1])
-            axs[1].set_ylim([-resolution, resolution])
-            filtered_df = df[df['sound'] == list(sound_set.keys())[1]]
-            if len(filtered_df) > 1:
-                average_values = filtered_df.groupby(filtered_df.sound_index)["angle"].mean().iloc[:-3]
-                axs[1].set_xlim([0, len(average_values)])
-                axs[1].plot(average_values.index, average_values.values, marker='o', markersize=2, color='red', label='Average Angle')
-                axs[1].axhline(y=sum(average_values.values)/len(average_values.values), color='black', linestyle='--')
-    
+            plot_average_sound(axs[1], sound_keys[1], 'red')
+
     return
 
 def plot_final(data_dict, sound_set):
@@ -317,3 +343,13 @@ def plot_final(data_dict, sound_set):
 # Other
 clear_terminal = lambda: os.system('cls')
 
+def get_weight(sound_A, sound_B, df):
+    
+    A_count = get_sound_count(sound_A, df)
+    B_count = get_sound_count(sound_B, df)
+
+    count_dif = 1/(abs(A_count - B_count) + 2)
+    A_weight = count_dif if A_count > B_count else 1 - count_dif
+    B_weight = 1 - count_dif if A_count > B_count else count_dif
+
+    return [A_weight, B_weight]
