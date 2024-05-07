@@ -1,24 +1,20 @@
 from globalsV8 import *
 
 
-
-
-
-
 # Sound
-def play_sound(sound, speaker, sound_duration, event, data_collection_duration, summarize_event):
-
+def play_sound():
     pygame.mixer.stop()
     channel = 0 if RUNNINGVARS["speaker_side_playing"] == "left" else 1
     
-    pygame.mixer.Channel(channel).play(sound, loops=-1)
+    pygame.mixer.Channel(channel).play(SOUNDSET[RUNNINGVARS["sound_playing"]], loops=-1)
     
     pygame.mixer.Channel(0).set_volume(1.0, 0.0) # Full volume on left, mute on right
     pygame.mixer.Channel(1).set_volume(0.0, 1.0) # Mute on left, full volume on right
 
-    pygame.time.set_timer(event, sound_duration, loops=1)
-    pygame.time.set_timer(summarize_event, data_collection_duration, loops=1)
+    pygame.time.set_timer(STOP_SOUND_EVENT, PARAMS["sound_duration"], loops=1)
 
+    pygame.time.set_timer(GET_POINT_EVENT, PARAMS["sample_rate"], loops = PARAMS["data_collection_duration"]//PARAMS["sample_rate"] + 5)
+    
     return
 
 # Frame
@@ -93,7 +89,47 @@ def plot_bird(cropped_frame, beak_center, angle, red_indices):
     
     plt.pause(.00000001)
 
+def plot_point(angle):
+    direction_constant = -1 if RUNNINGVARS["speaker_side_playing"] == "left" else 1
+    DATA_PLOT = DATA_PLOT_TOP if RUNNINGVARS["sound_playing"] == list(SOUNDSET.keys())[0] else DATA_PLOT_BOTTOM
+    pt = DATA_PLOT.plot(RUNNINGVARS["sound_frame"]*PARAMS["sample_rate"], angle * direction_constant, marker='o', markersize=2, color="red", label='Added Point')
 
+def summarize_points():
+    DATA_PLOT = DATA_PLOT_TOP if RUNNINGVARS["sound_playing"] == list(SOUNDSET.keys())[0] else DATA_PLOT_BOTTOM
+    df = DATA
+    filtered_df = df[df['sound'] == RUNNINGVARS["sound_playing"]]
+    print(filtered_df)
+    if len(filtered_df) > 1:
+        average_values = filtered_df.groupby(filtered_df.sound_index)["angle"].mean()
+        error_values = filtered_df.groupby(filtered_df.sound_index)["angle"].std(ddof=0)
+        print(average_values, error_values)
+        DATA_PLOT.plot(average_values.index*PARAMS["sample_rate"], average_values.values, color="purple", label='Average Angle')
+        DATA_PLOT.fill_between(list(average_values.index*PARAMS["sample_rate"]), list(average_values.values-error_values.values), list(average_values.values+error_values.values), color="blue", alpha=0.2)
+        #ax.axhline(y=sum(average_values.values)/len(average_values.values), color='black', linestyle='--')
+        #ax.axhline(y=0, color='black', linestyle='-')
+
+# Data
+def record_data(angle, beak_center):
+    global DATA
+
+    direction_constant = -1 if RUNNINGVARS["speaker_side_playing"] == "left" else 1  # Translate L/R to Toward/Away
+
+    # Create a new row for the current frame
+    new_row = {
+        'time': round(time.time() - RUNNINGVARS["start_time"], 2),
+        'sound_index': RUNNINGVARS["sound_frame"],
+        'angle': round(angle, 2) * direction_constant,
+        'X': beak_center[0] - FEED.frame_size // 2,
+        'Y': beak_center[1] - FEED.frame_size // 2,
+        'sound': RUNNINGVARS["sound_playing"],
+        'side': RUNNINGVARS["speaker_side_playing"]
+    }
+
+    # Append the new row to the DataFrame
+    if len(DATA) == 0:
+        DATA = pd.DataFrame(new_row, index=[0])
+    else:
+        DATA = pd.concat([DATA, pd.DataFrame(new_row, index=[0])], ignore_index=True)
 
 # Other Functions
 clear_terminal = lambda: os.system('cls')

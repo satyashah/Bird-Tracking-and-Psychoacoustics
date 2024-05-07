@@ -11,12 +11,13 @@ import random
 
 
 global PARAMS
+global RUNNINGVARS
 global DATA 
 global FRAME_CENTER
 global FEED
 global TOP_PLOT, CAM_PLOT, DATA_PLOT_TOP, DATA_PLOT_BOTTOM 
 global SOUNDSET
-
+global STOP_SOUND_EVENT, SUMMARIZE_EVENT, RESUME_EVENT
 
 # Dictionary to running parameters
 PARAMS = {
@@ -29,10 +30,18 @@ PARAMS = {
     "stable_duration": 500, # Time in milliseconds to be considered stable before starting test
 
     "switch_thresh": 145, # Angle threshold to switch direction of calculate angle
+    
+    "data_collection_duration": 3000, # Duration of data collection in ms
+    "sound_duration": 1000, # Duration of sound in ms
+    "sample_rate": 100, # Data collection per X ms
+    "time_between_sounds": 1000, # Time between sounds in ms
+
+    "resolution": 120, # Resolution of the angle plot
 }
 
 
 RUNNINGVARS = {
+    "start_time": time.time(),
     "last_stable_time": None,
     "override": False,
     "running_test": False,
@@ -40,6 +49,8 @@ RUNNINGVARS = {
     "sound_playing": "blank",
     "sound_A_count": 0,
     "sound_B_count": 0,
+    "frame_num": 0,
+    "sound_frame": 0,
 }
 
 # Dataframe to store data
@@ -70,6 +81,7 @@ class Feed:
         cropped_frame = frame[crop_y1:crop_y2, crop_x1:crop_x2]
 
         return cropped_frame
+
 FEED = Feed(400) # FRAME_SIZE = 400
 
 # Camara and Frame Center Set Up
@@ -93,32 +105,61 @@ def set_up_cam():
     return clicked_coordinates[-1][0], clicked_coordinates[-1][1] # Return the last clicked coordinates
 FRAME_CENTER = (333, 254) #set_up_cam()
 
-
-# Create a figure with two subplots and top section
-fig = plt.figure(figsize=(15, 8))
-gs = gridspec.GridSpec(3, 2, width_ratios=[2, 2], height_ratios=[1, 6, 6])
-TOP_PLOT = fig.add_subplot(gs[0, :])
-TOP_PLOT.clear()
-TOP_PLOT.axis("off")
-CAM_PLOT = fig.add_subplot(gs[1:3, 0])
-DATA_PLOT_TOP = fig.add_subplot(gs[1, 1])
-DATA_PLOT_BOTTOM = fig.add_subplot(gs[2, 1])
-plt.tight_layout(pad=3)
-
-
 # Sound Set Up
 pygame.init()
 pygame.mixer.init(channels=2)
 
 SOUNDSET = {}
 
-sound_A_names = PARAMS["sound_A_path"].split("/")[-1].split(".")[0] 
-SOUNDSET[sound_A_names] = pygame.mixer.Sound(PARAMS["sound_A_path"])
+sound_A_name = PARAMS["sound_A_path"].split("/")[-1].split(".")[0] 
+SOUNDSET[sound_A_name] = pygame.mixer.Sound(PARAMS["sound_A_path"])
 
-sound_B_names = PARAMS["sound_B_path"].split("/")[-1].split(".")[0]
-SOUNDSET[sound_B_names] = pygame.mixer.Sound(PARAMS["sound_B_path"])
+sound_B_name = PARAMS["sound_B_path"].split("/")[-1].split(".")[0]
+SOUNDSET[sound_B_name] = pygame.mixer.Sound(PARAMS["sound_B_path"])
 
 pygame.mixer.Channel(0).set_volume(1.0, 0.0) # Full volume on left, mute on right
 pygame.mixer.Channel(1).set_volume(0.0, 1.0) # Mute on left, full volume on right
+
+
+# Create a figure with two subplots and top section
+fig = plt.figure(figsize=(15, 8))
+gs = gridspec.GridSpec(3, 2, width_ratios=[2, 2], height_ratios=[1, 6, 6])
+TOP_PLOT = fig.add_subplot(gs[0, :])
+CAM_PLOT = fig.add_subplot(gs[1:3, 0])
+DATA_PLOT_TOP = fig.add_subplot(gs[1, 1])
+DATA_PLOT_BOTTOM = fig.add_subplot(gs[2, 1])
+plt.tight_layout(pad=3)
+plt.ion()
+
+TOP_PLOT.clear()
+TOP_PLOT.axis("off")
+TOP_PLOT.text(0.5, 0.5, f"Playing {RUNNINGVARS["sound_playing"]} from {RUNNINGVARS["speaker_side_playing"]} side", fontsize=20, ha="center", va="center")
+
+
+def set_data_plots():
+    if RUNNINGVARS["sound_playing"] == "blank" or RUNNINGVARS["sound_playing"] is list(SOUNDSET.keys())[0]:
+        DATA_PLOT_TOP.clear()
+        DATA_PLOT_TOP.set_title(f"{list(SOUNDSET.keys())[0]} ({RUNNINGVARS["sound_A_count"]})")
+        DATA_PLOT_TOP.set_xlabel('Time (ms)')
+        DATA_PLOT_TOP.set_ylabel('Mean Angle')
+        DATA_PLOT_TOP.set_ylim([-PARAMS["resolution"], PARAMS["resolution"]])
+        DATA_PLOT_TOP.set_xlim([0, PARAMS["data_collection_duration"]])
+
+    if RUNNINGVARS["sound_playing"] == "blank" or RUNNINGVARS["sound_playing"] is list(SOUNDSET.keys())[1]:
+        DATA_PLOT_BOTTOM.clear()
+        DATA_PLOT_BOTTOM.set_title(f"{list(SOUNDSET.keys())[1]} ({RUNNINGVARS["sound_B_count"]})")
+        DATA_PLOT_BOTTOM.set_xlabel('Time (ms)')
+        DATA_PLOT_BOTTOM.set_ylabel('Mean Angle')
+        DATA_PLOT_BOTTOM.set_ylim([-PARAMS["resolution"], PARAMS["resolution"]])
+        DATA_PLOT_TOP.set_xlim([0, PARAMS["data_collection_duration"]])  
+set_data_plots()
+
+
+# EVENTS
+STOP_SOUND_EVENT = pygame.USEREVENT + 1
+GET_POINT_EVENT = pygame.USEREVENT + 2
+SUMMARIZE_EVENT = pygame.USEREVENT + 3
+RESUME_EVENT = pygame.USEREVENT + 4
+
 
 print("Globals Loaded")
