@@ -10,7 +10,8 @@ import pygame
 import random
 import threading
 from queue import Queue
-
+import msvcrt
+import datetime
 
 global PARAMS
 global RUNNINGVARS
@@ -22,7 +23,7 @@ global SOUNDSET
 global STOP_SOUND_EVENT, SUMMARIZE_EVENT, RESUME_EVENT
 global DATA_BUS
 
-# USER PARAMS
+# USER PARAMS [CHANGE THESE]
 PARAMS = {
     "sound_A_path": "test_sounds/ABCD_perry.wav",
     "sound_B_path": "test_sounds/ABCDallrev_perry.wav",
@@ -30,14 +31,15 @@ PARAMS = {
     "bird_dir": None,
 
     "stable_threshold": 25, # Bird must be within +/- this angle to be considered stable
-    "stable_duration": 500, # Time in milliseconds to be considered stable before starting test
+    "location_threshold": 100, # Bird must be within +/- this distance to be considered stable
+    "stable_duration": 1000, # Time in milliseconds to be considered stable before starting test
 
     "switch_thresh": 145, # Angle threshold to switch direction of calculate angle
     
     "data_collection_duration": 3000, # Duration of data collection in ms
     "sound_duration": 1000, # Duration of sound in ms
     "sample_rate": 100, # Data collection per X ms
-    "time_between_sounds": 3000, # Time between sounds in ms
+    "time_between_sounds": 1000, # Time between sounds in ms
 
     "resolution": 120, # Resolution of the angle plot
 }
@@ -57,11 +59,14 @@ RUNNINGVARS = {
     "cur_angle": 0,
     "threads": [],
     "thread_index": 0,
+    "pause": False,
+    "cam_center": (0, 0),
 }
 
 # Dataframe to store data
-columns = ['time', 'sound_index', 'angle', 'X', 'Y', 'sound', 'side']
-DATA = pd.DataFrame(columns=columns)
+DATA = pd.DataFrame()
+
+
 
 # Set up camera feed
 class Feed:
@@ -69,6 +74,7 @@ class Feed:
         self.frame_size = FRAME_SIZE
         self.feed = cv2.VideoCapture(0, cv2.CAP_DSHOW)
         [self.feed.read(0) for i in range(2)] # Remove first two frames
+        RUNNINGVARS["cam_center"] = (FRAME_SIZE// 2, FRAME_SIZE//2)
 
     def get_frame(self):
         _, frame = self.feed.read()
@@ -138,10 +144,19 @@ DATA_PLOT_BOTTOM = fig.add_subplot(gs[2, 1])
 plt.tight_layout(pad=3)
 plt.ion()
 
-TOP_PLOT.clear()
-TOP_PLOT.axis("off")
-TOP_PLOT.text(0.5, 0.5, f"Playing {RUNNINGVARS["sound_playing"]} from {RUNNINGVARS["speaker_side_playing"]} side", fontsize=20, ha="center", va="center")
+def write2plot(text):
+    TOP_PLOT.clear()
+    TOP_PLOT.axis("off")
+    TOP_PLOT.text(0.5, 0.5, text, fontsize=20, ha="center", va="center")
 
+def on_click(event):
+    if event.inaxes:
+        print(f'data coords {event.xdata} {event.ydata},',
+            f'pixel coords {event.x} {event.y}')
+        
+        RUNNINGVARS["cam_center"] = (int(event.xdata), int(event.ydata))
+    
+plt.connect('button_press_event', on_click)
 
 def set_data_plots():
     if RUNNINGVARS["sound_playing"] == "blank" or RUNNINGVARS["sound_playing"] is list(SOUNDSET.keys())[0]:
