@@ -1,11 +1,12 @@
-from globalsV9 import *
+from globalsV10 import *
 
 # Sound
 def play_sound():
     pygame.mixer.stop()
     channel = 0 if RUNNINGVARS["speaker_side_playing"] == "left" else 1
     
-    pygame.mixer.Channel(channel).play(SOUNDSET[RUNNINGVARS["sound_playing"]], loops=-1)
+    if RUNNINGVARS["sound_playing"] != "control":
+        pygame.mixer.Channel(channel).play(random.choice(SOUNDSET[RUNNINGVARS["sound_playing"]]), loops=-1)
     
     pygame.mixer.Channel(0).set_volume(1.0, 0.0) # Full volume on left, mute on right
     pygame.mixer.Channel(1).set_volume(0.0, 1.0) # Mute on left, full volume on right
@@ -14,6 +15,7 @@ def play_sound():
 
     RUNNINGVARS["sound_A_count"] += 1 if RUNNINGVARS["sound_playing"] == list(SOUNDSET.keys())[0] else 0
     RUNNINGVARS["sound_B_count"] += 1 if RUNNINGVARS["sound_playing"] == list(SOUNDSET.keys())[1] else 0
+    RUNNINGVARS["control_count"] += 1 if RUNNINGVARS["sound_playing"] == "control" else 0
 
     return
 
@@ -23,9 +25,12 @@ def get_beak_center(frame):
     This function takes an image and returns the center of the beak.
     """
     # Define BGR range for the color red
-    lower_red_bgr = np.array([0, 0, 70])   # Lower bound of red (in BGR format)
-    upper_red_bgr = np.array([20, 30, 255])  # Upper bound of red (in BGR format) 
+    # lower_red_bgr = np.array([0, 0, 70])   # Lower bound of red (in BGR format)
+    # upper_red_bgr = np.array([20, 30, 255])  # Upper bound of red (in BGR format) 
 
+    # TESTING LIMITS
+    lower_red_bgr = np.array([100, 40, 200])   # Lower bound of red (in BGR format)
+    upper_red_bgr = np.array([150, 90, 255])  # Upper bound of red (in BGR format)
     # Create a mask for red pixels
     mask = cv2.inRange(frame, lower_red_bgr, upper_red_bgr)
 
@@ -93,11 +98,26 @@ def plot_bird(cropped_frame, beak_center, angle, red_indices):
 
 def plot_point(time, angle):
     direction_constant = -1 if RUNNINGVARS["speaker_side_playing"] == "left" else 1
-    DATA_PLOT = DATA_PLOT_TOP if RUNNINGVARS["sound_playing"] == list(SOUNDSET.keys())[0] else DATA_PLOT_BOTTOM
+
+    if RUNNINGVARS["sound_playing"] == list(SOUNDSET.keys())[0]:
+        DATA_PLOT = DATA_PLOT_TOP
+    elif RUNNINGVARS["sound_playing"] == list(SOUNDSET.keys())[1]:
+        DATA_PLOT = DATA_PLOT_BOTTOM
+    else:
+        DATA_PLOT = DATA_PLOT_CONTROL
+    
     pt = DATA_PLOT.plot(time, angle * direction_constant, marker='o', markersize=2, color="red", label='Added Point')
 
 def summarize_points():
-    DATA_PLOT = DATA_PLOT_TOP if RUNNINGVARS["sound_playing"] == list(SOUNDSET.keys())[0] else DATA_PLOT_BOTTOM
+    
+    if RUNNINGVARS["sound_playing"] == list(SOUNDSET.keys())[0]:
+        DATA_PLOT = DATA_PLOT_TOP
+    elif RUNNINGVARS["sound_playing"] == list(SOUNDSET.keys())[1]:
+        DATA_PLOT = DATA_PLOT_BOTTOM
+    else:
+        DATA_PLOT = DATA_PLOT_CONTROL
+    
+    
     filtered_df = DATA[DATA['sound'] == RUNNINGVARS["sound_playing"]]
     if len(filtered_df) > 1:
         average_values = filtered_df.groupby(filtered_df.sound_index)["angle"].mean()
@@ -197,7 +217,20 @@ def get_weight():
     return [A_weight, B_weight]
 
 
-     
+def saveData():
+    global DATA
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    plt.savefig(f'data/{timestamp}.png')
+    DATA.to_csv(f'data/{timestamp}.csv', index=False)
+
+    clear_terminal()
+    summarized_data = DATA.groupby('sound').agg({
+        'angle': {'mean', 'std', 'min', 'max'},
+    })
+
+    # Displaying the summarized data in a neat table format
+    print(summarized_data)
+
 
 
 
