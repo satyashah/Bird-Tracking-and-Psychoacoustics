@@ -26,8 +26,8 @@ global DATA_BUS
 # USER PARAMS [CHANGE THESE]
 PARAMS = {
     "sound_A_name": "Forward Sound",
-    "sound_B_name": "Backward Sound",
     "sound_A_paths": ["test_sounds/ABCD_perry.wav", "test_sounds/ZFAB.wav"],
+    "sound_B_name": "Backward Sound",
     "sound_B_paths": ["test_sounds/ABCDallrev_perry.wav", "test_sounds/CanaryAB.wav"],
 
     "bird_dir": None,
