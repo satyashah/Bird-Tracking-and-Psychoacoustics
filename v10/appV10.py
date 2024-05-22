@@ -22,7 +22,7 @@ while True:
         if msvcrt.kbhit():
             key = msvcrt.getch()
             if key == b' ':
-                print("\Resume...\n")
+                print("Resume...\n")
                 RUNNINGVARS["pause"] = False
         continue
 
@@ -32,7 +32,7 @@ while True:
         RUNNINGVARS["override"] = False
 
         RUNNINGVARS["sound_playing"] = random.choices(list(SOUNDSET.keys()), weights=get_weight())[0]
-        RUNNINGVARS["sound_playing"] = "control" if random.random() < 0.5 else RUNNINGVARS["sound_playing"] # 10% chance of control sound
+        RUNNINGVARS["sound_playing"] = "control" if random.random() < PARAMS["control_freq"] else RUNNINGVARS["sound_playing"] # 10% chance of control sound
 
         RUNNINGVARS["speaker_side_playing"] = random.choice(["left", "right"])
         
@@ -54,7 +54,16 @@ while True:
             RUNNINGVARS["last_stable_time"] = time.time()
             RUNNINGVARS["running_test"] = False
             RUNNINGVARS["override"] = False
-        
+    
+
+    """
+    Key Presses
+        Space: Pause/Unpause
+        Esc: Exit
+        Del: Clear Data
+        Enter: Override Testing
+    """
+    
     if msvcrt.kbhit():
         key = msvcrt.getch()
         if key == b' ':

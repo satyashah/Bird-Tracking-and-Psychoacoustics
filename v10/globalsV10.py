@@ -44,6 +44,8 @@ PARAMS = {
     "time_between_sounds": 1000, # Time between sounds in ms
 
     "resolution": 120, # Resolution of the angle plot
+
+    "control_freq": 0.1, # Frequency of control sound playing [0.1 == 10%]
 }
 
 # SYTEM VARS

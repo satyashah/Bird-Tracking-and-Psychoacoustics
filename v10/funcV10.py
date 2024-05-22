@@ -25,12 +25,9 @@ def get_beak_center(frame):
     This function takes an image and returns the center of the beak.
     """
     # Define BGR range for the color red
-    # lower_red_bgr = np.array([0, 0, 70])   # Lower bound of red (in BGR format)
-    # upper_red_bgr = np.array([20, 30, 255])  # Upper bound of red (in BGR format) 
+    lower_red_bgr = np.array([0, 0, 70])   # Lower bound of red (in BGR format)
+    upper_red_bgr = np.array([20, 30, 255])  # Upper bound of red (in BGR format) 
 
-    # TESTING LIMITS
-    lower_red_bgr = np.array([100, 40, 200])   # Lower bound of red (in BGR format)
-    upper_red_bgr = np.array([150, 90, 255])  # Upper bound of red (in BGR format)
     # Create a mask for red pixels
     mask = cv2.inRange(frame, lower_red_bgr, upper_red_bgr)
 
@@ -198,7 +195,7 @@ def reset_data():
 clear_terminal = lambda: os.system('cls')
 
 def bird_stable(angle, beak_center):
-    if math.isnan(angle) or abs(angle) > PARAMS["stable_threshold"] or abs(beak_center[1] - FEED.frame_size//2) > PARAMS["location_threshold"] or RUNNINGVARS["last_stable_time"] is None:
+    if math.isnan(angle) or abs(angle) > PARAMS["stable_threshold"] or abs(beak_center[1] - RUNNINGVARS["cam_center"][1]) > PARAMS["location_threshold"] or RUNNINGVARS["last_stable_time"] is None:
         RUNNINGVARS["last_stable_time"] = time.time()
     
     if RUNNINGVARS["override"] or (not RUNNINGVARS["running_test"] and time.time() - RUNNINGVARS["last_stable_time"] > PARAMS["stable_duration"]/1000):
@@ -219,11 +216,17 @@ def get_weight():
 
 def saveData():
     global DATA
+
+    if DATA.empty:
+        print("No data to save")
+        return
+    
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     plt.savefig(f'data/{timestamp}.png')
     DATA.to_csv(f'data/{timestamp}.csv', index=False)
 
     clear_terminal()
+    
     summarized_data = DATA.groupby('sound').agg({
         'angle': {'mean', 'std', 'min', 'max'},
     })
