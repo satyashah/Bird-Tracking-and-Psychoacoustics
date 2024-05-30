@@ -45,7 +45,7 @@ PARAMS = {
 
     "resolution": 120, # Resolution of the angle plot
 
-    "control_freq": 0.1, # Frequency of control sound playing [0.1 == 10%]
+    "control_freq": 0.25, # Frequency of control sound playing [0.1 == 10%]
 }
 
 # SYTEM VARS
