@@ -1,9 +1,0 @@
-1. OpenCV Contour Detection
-2. Using Dynamic Thresholding (Otsu)
-3. To limit outliers, sample 10 most distant and any distance greater than 
-    x away will be discarded as an outliers
-    
-    This extends to looking at all sorted points distances from com and if there are any gaps > threshold, 
-    get rid of all points greater than that gap
-
-4. Check shape if circular all good, if irregular try again
