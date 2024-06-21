@@ -32,7 +32,7 @@ while True:
         RUNNINGVARS["override"] = False
 
         RUNNINGVARS["sound_playing"] = random.choices(list(SOUNDSET.keys()), weights=get_weight())[0]
-        RUNNINGVARS["sound_playing"] = "control" if random.random() < PARAMS["control_freq"] else RUNNINGVARS["sound_playing"] # 10% chance of control sound
+        RUNNINGVARS["sound_playing"] = "control" if random.random() < PARAMS["control_freq"] else RUNNINGVARS["sound_playing"] # % chance of control sound
 
         RUNNINGVARS["speaker_side_playing"] = random.choice(["left", "right"])
         
@@ -42,7 +42,7 @@ while True:
     
     data_socket()
 
-    for event in pygame.event.get():
+    for event in pygame.event.         ():
         if event.type == STOP_SOUND_EVENT:
             print("Stopping sound")
             pygame.mixer.stop()
@@ -74,6 +74,7 @@ while True:
             break
         if key == b'\xe0':
             print("Clearing...")
+            clear_terminal()
             reset_data()
         if key == b'\r' and not RUNNINGVARS["running_test"]:
             print("Overriding...")

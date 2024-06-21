@@ -1,5 +1,5 @@
 from globalsV10 import *
-
+ 
 # Sound
 def play_sound():
     pygame.mixer.stop()
@@ -123,7 +123,6 @@ def summarize_points():
         DATA_PLOT.fill_between(list(average_values.index*PARAMS["sample_rate"]), list(average_values.values-error_values.values), list(average_values.values+error_values.values), color="blue", alpha=0.2)
 
 # Data
-
 def data_worker(data_bus, wait_time):
     time.sleep(wait_time/1000)
     record_data()
@@ -189,6 +188,7 @@ def reset_data():
     RUNNINGVARS["speaker_side_playing"] = "neither"
     RUNNINGVARS["sound_A_count"] = 0
     RUNNINGVARS["sound_B_count"] = 0
+    RUNNINGVARS["control_count"] = 0
 
     set_data_plots()
 # Other Functions
@@ -212,7 +212,6 @@ def get_weight():
     B_weight = 1 - count_dif if A_count > B_count else count_dif
 
     return [A_weight, B_weight]
-
 
 def saveData():
     global DATA
