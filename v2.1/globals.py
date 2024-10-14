@@ -28,12 +28,12 @@ PARAMS = settings.PARAMS
 
 # SYTEM VARS
 RUNNINGVARS = {
-    # "start_time": time.time(),
+    "start_time": time.time(),
     # "last_stable_time": None,
     # "override": False,
     # "running_test": False,
     "speaker_side_playing": "neither",
-    # "sound_playing": "blank",
+    "sound_playing": "blank",
     # "sound_A_count": 0,
     # "sound_B_count": 0,
     # "control_count": 0,
@@ -152,7 +152,7 @@ print(TRIALS)
 
 
 # Create a figure with two subplots and top section
-fig = plt.figure(figsize=(15, 8))
+fig = plt.figure(figsize=(10, 6))
 gs = gridspec.GridSpec(2, 2, width_ratios=[3, 4], height_ratios=[1, 10])  # Adjust width ratios for side-by-side plots
 TOP_PLOT = fig.add_subplot(gs[0, :])  # Top plot for general info
 CAM_PLOT = fig.add_subplot(gs[1, 0])  # Camera plot on the left

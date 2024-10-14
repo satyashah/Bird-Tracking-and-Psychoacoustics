@@ -7,7 +7,8 @@ starttime = time.time()
 clear_terminal() # Clear terminal
 print("Paused... Press Space here to Resume")
 
-count = 0
+trial_num = 0
+sound_num = 0
 while True:
     if RUNNINGVARS["pause"]:
         write2plot(f"Paused... Press Space on Terminal to Resume")
@@ -21,27 +22,32 @@ while True:
     
 
     # time.delay(10000)
-    # if RUNNINGVARS["pause"]:
-    #     if msvcrt.kbhit():
-    #         key = msvcrt.getch()
-    #         if key == b' ':
-    #             print("Resume...\n")
-    #             RUNNINGVARS["pause"] = False
-    #     continue
+    if RUNNINGVARS["pause"]:
+        if msvcrt.kbhit():
+            key = msvcrt.getch()
+            if key == b' ':
+                print("Resume...\n")
+                RUNNINGVARS["pause"] = False
+        continue
 
-    # if bird_stable(angle, beak_center):
-    #     print("Bird is stable")
-    #     RUNNINGVARS["running_test"] = True
-    #     RUNNINGVARS["override"] = False
+    if sound_num == 0:
+        RUNNINGVARS["speaker_side_playing"] = random.choice(["left", "right"])
+    if sound_num == len(TRIALS[trial_num]):
+        sound_num = 0
+        trial_num += 1
+        RUNNINGVARS["sound_playing"] = "None"
+        record_data()
+        break
+    
+    record_data()
 
-    #     RUNNINGVARS["sound_playing"] = random.choices(list(SOUNDSET.keys()), weights=get_weight())[0]
-    #     RUNNINGVARS["sound_playing"] = "control" if random.random() < PARAMS["control_freq"] else RUNNINGVARS["sound_playing"] # % chance of control sound
+    RUNNINGVARS["sound_playing"] = TRIALS[trial_num][sound_num][0]
+    sound = TRIALS[trial_num][sound_num][1]
+    sound.play()
+    pygame.time.delay(int(sound.get_length() * 1000))
+    sound_num += 1
 
-    #     RUNNINGVARS["speaker_side_playing"] = random.choice(["left", "right"])
-        
-    #     print(f"\n{RUNNINGVARS["sound_playing"]} starting on {RUNNINGVARS["speaker_side_playing"]} Speaker...\n")
-    #     play_sound()
-    #     RUNNINGVARS["threads"] = spawn_data_collection()
+    print(DATA)
     
     # data_socket()
 
@@ -85,5 +91,4 @@ while True:
         
         key = None
 
-
-saveData()
+# saveData()

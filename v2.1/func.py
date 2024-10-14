@@ -25,8 +25,8 @@ def get_beak_center(frame):
     This function takes an image and returns the center of the beak.
     """
     # Define BGR range for the color red
-    lower_red_bgr = np.array([0, 0, 70])   # Lower bound of red (in BGR format)
-    upper_red_bgr = np.array([20, 30, 255])  # Upper bound of red (in BGR format) 
+    lower_red_bgr = np.array([50, 10, 70])   # Lower bound of red (in BGR format)
+    upper_red_bgr = np.array([80, 30, 255])  # Upper bound of red (in BGR format) 
 
     # Create a mask for red pixels
     mask = cv2.inRange(frame, lower_red_bgr, upper_red_bgr)
@@ -169,11 +169,12 @@ def record_data():
     # Create a new row for the current frame
     new_row = {
         'time': round(time.time() - RUNNINGVARS["start_time"], 2),
-        'sound_index': RUNNINGVARS["sound_frame"],
         'angle': round(RUNNINGVARS["cur_angle"], 2) * direction_constant,
         'sound': RUNNINGVARS["sound_playing"],
         'side': RUNNINGVARS["speaker_side_playing"]
     }
+
+    print(new_row)
 
     # Append the new row to the DataFrame
     if len(DATA) == 0:
