@@ -26,25 +26,17 @@ global TRIALS
 # USER PARAMS [CHANGE THESE]
 PARAMS = settings.PARAMS
 
-# SYTEM VARS
+# SYSTEM VARS
 RUNNINGVARS = {
     "start_time": time.time(),
-    # "last_stable_time": None,
-    # "override": False,
-    # "running_test": False,
+    "running_test": False,
     "speaker_side_playing": "neither",
     "sound_playing": "blank",
-    # "sound_A_count": 0,
-    # "sound_B_count": 0,
-    # "control_count": 0,
-    "frame_num": 0,
-    # "sound_frame": 0,
+    "trial_num": 0,
+    "stim_num": -1,
     "cur_angle": 0,
-    # "threads": [],
-    # "thread_index": 0,
     "pause": True,
     "cam_center": (0, 0),
-    # "bird_dir": None,
 }
 
 # Dataframe to store data
@@ -55,8 +47,8 @@ class Feed:
     def __init__(self, FRAME_SIZE):
         self.frame_size = FRAME_SIZE
         self.feed = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-        [self.feed.read(0) for i in range(2)] # Remove first two frames
-        RUNNINGVARS["cam_center"] = (FRAME_SIZE// 2, FRAME_SIZE//2)
+        [self.feed.read(0) for _ in range(2)]  # Remove first two frames
+        RUNNINGVARS["cam_center"] = (FRAME_SIZE // 2, FRAME_SIZE // 2)
 
     def get_frame(self):
         _, frame = self.feed.read()
@@ -76,28 +68,10 @@ class Feed:
 
         return cropped_frame
 
-FEED = Feed(450) # FRAME_SIZE = 450
+FEED = Feed(450)  # FRAME_SIZE = 450
 
-# Camara and Frame Center Set Up
-def set_up_cam():
-    frame = FEED.get_frame()
-    
-    clicked_coordinates = []  # List to store clicked coordinates
-
-    def onclick(event):
-        if event.inaxes is not None:
-            print(f'Selected Bird Center: ({int(event.xdata)}, {int(event.ydata)})')
-            clicked_coordinates.append((int(event.xdata), int(event.ydata)))  # Append clicked coordinates
-            plt.close()
-
-    plt.title('Click on the Center of Bird')
-    plt.imshow(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), cmap='gray')
-    plt.gcf().canvas.mpl_connect('button_press_event', onclick)
-    plt.show() # Show the plot, wait for the user to click
-
-    # This return is executed after the user clicks and the plot is closed
-    return clicked_coordinates[-1][0], clicked_coordinates[-1][1] # Return the last clicked coordinates
-FRAME_CENTER = set_up_cam()
+# Camera Center Set Up
+FRAME_CENTER = (328, 262)  # Set manually or use set_up_cam()
 
 # Sound Set Up
 pygame.init()
@@ -110,8 +84,8 @@ for sound_index in range(len(PARAMS["sound_names"])):
     path = PARAMS["sound_paths"][sound_index]
     SOUNDSET[name] = pygame.mixer.Sound(path)
 
-pygame.mixer.Channel(0).set_volume(1.0, 0.0) # Full volume on left, mute on right
-pygame.mixer.Channel(1).set_volume(0.0, 1.0) # Mute on left, full volume on right
+pygame.mixer.Channel(0).set_volume(1.0, 0.0)  # Full volume on left, mute on right
+pygame.mixer.Channel(1).set_volume(0.0, 1.0)  # Mute on left, full volume on right
 
 def build_sound_sequence(SOUNDSET, min_control_spacer, seq_length):
     if seq_length < (len(SOUNDSET) + 1) * min_control_spacer + len(SOUNDSET):
@@ -136,24 +110,14 @@ def build_sound_sequence(SOUNDSET, min_control_spacer, seq_length):
 
     return sound_seq  # Ensure we return exactly seq_length sounds
 
-
 TRIALS = []
 for trial_num in range(PARAMS["num_trials"]):   
     sound_sequence = build_sound_sequence(SOUNDSET, PARAMS["min_control_spacer"], PARAMS["seq_length"])
     TRIALS.append(sound_sequence)
 
-print(TRIALS)
-
-## TEST REMOVE LATER
-# first = SOUNDSET[list(SOUNDSET.keys())[0]]
-# print(first.get_length())
-# first.play()
-# pygame.time.delay(int(first.get_length() * 1000))
-
-
 # Create a figure with two subplots and top section
 fig = plt.figure(figsize=(10, 6))
-gs = gridspec.GridSpec(2, 2, width_ratios=[3, 4], height_ratios=[1, 10])  # Adjust width ratios for side-by-side plots
+gs = gridspec.GridSpec(2, 2, width_ratios=[3, 4], height_ratios=[1, 10])
 TOP_PLOT = fig.add_subplot(gs[0, :])  # Top plot for general info
 CAM_PLOT = fig.add_subplot(gs[1, 0])  # Camera plot on the left
 DATA_PLOT = fig.add_subplot(gs[1, 1])  # Data plot on the right
@@ -168,17 +132,32 @@ def write2plot(text):
 
 def on_click(event):
     if event.inaxes:
-        print(f'data coords {event.xdata} {event.ydata},',
-            f'pixel coords {event.x} {event.y}')
-        
         RUNNINGVARS["cam_center"] = (int(event.xdata), int(event.ydata))
-    
+
 plt.connect('button_press_event', on_click)
 
 def set_data_plots():
-    pass
+    categories = ['control'] + PARAMS["sound_names"]
+    y_values = [[0] for _ in categories]  # Initialize y_values with a list of lists, one for each category
+    
+    DATA_PLOT.clear()
+    box = DATA_PLOT.boxplot(y_values, labels=categories)
+
+    for element in ['boxes', 'whiskers', 'fliers', 'medians', 'caps']:
+        plt.setp(box[element], color='none')
+
+    DATA_PLOT.set_ylim(-145, 145)
+    DATA_PLOT.set_ylabel('Movement (degrees)')
+    DATA_PLOT.set_title('Movement Per Sound')
 
 set_data_plots()
 
+# EVENTS
+STOP_SOUND_EVENT = pygame.USEREVENT + 1
+GET_POINT_EVENT = pygame.USEREVENT + 2
+SUMMARIZE_EVENT = pygame.USEREVENT + 3
+RESUME_EVENT = pygame.USEREVENT + 4
 
+# Threading
+DATA_BUS = Queue()
 print("Globals Loaded")

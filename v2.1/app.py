@@ -1,94 +1,75 @@
 from globals import *
 from func import *
-
 import time
+import random  # Added this since random is used
+
 starttime = time.time()
 
-clear_terminal() # Clear terminal
+clear_terminal()  # Clear terminal
 print("Paused... Press Space here to Resume")
 
-trial_num = 0
-sound_num = 0
 while True:
     if RUNNINGVARS["pause"]:
-        write2plot(f"Paused... Press Space on Terminal to Resume")
+        write2plot("Paused... Press Space on Terminal to Resume")
     else:
-        write2plot(f"Playing {RUNNINGVARS["sound_playing"]} from {RUNNINGVARS["speaker_side_playing"]} side")
+        write2plot(f"Playing {RUNNINGVARS['sound_playing'][0]} from {RUNNINGVARS['speaker_side_playing']} side")
 
-    RUNNINGVARS["frame_num"] += 1
     frame, angle, beak_center, red_indices = display_camara()
     plot_bird(frame, beak_center, angle, red_indices)
-    RUNNINGVARS["cur_angle"] = angle
-    
+    RUNNINGVARS["cur_angle"] = angle # random.randint(-50, 50)
 
-    # time.delay(10000)
     if RUNNINGVARS["pause"]:
         if msvcrt.kbhit():
-            key = msvcrt.getch()
-            if key == b' ':
+            if msvcrt.getch() == b' ':
                 print("Resume...\n")
                 RUNNINGVARS["pause"] = False
         continue
 
-    if sound_num == 0:
-        RUNNINGVARS["speaker_side_playing"] = random.choice(["left", "right"])
-    if sound_num == len(TRIALS[trial_num]):
-        sound_num = 0
-        trial_num += 1
-        RUNNINGVARS["sound_playing"] = "None"
-        record_data()
-        break
+    if not RUNNINGVARS["running_test"]:
+        RUNNINGVARS["stim_num"] += 1
+
+        if RUNNINGVARS["stim_num"] == 0:
+            RUNNINGVARS["speaker_side_playing"] = random.choice(["left", "right"])
+
+        if RUNNINGVARS["stim_num"] == len(TRIALS[RUNNINGVARS["trial_num"]]):
+            RUNNINGVARS["stim_num"] = 0
+            RUNNINGVARS["trial_num"] += 1
+            summarize_trial()
+
+        if RUNNINGVARS["trial_num"] == len(TRIALS):
+            write2plot("Complete")
+            break
+        
+        RUNNINGVARS["sound_playing"] = TRIALS[RUNNINGVARS["trial_num"]][RUNNINGVARS["stim_num"]]
+        print("Playing", RUNNINGVARS["sound_playing"][0], "from", RUNNINGVARS["speaker_side_playing"], "side")
+        RUNNINGVARS["running_test"] = True
+        play_sound()
     
     record_data()
 
-    RUNNINGVARS["sound_playing"] = TRIALS[trial_num][sound_num][0]
-    sound = TRIALS[trial_num][sound_num][1]
-    sound.play()
-    pygame.time.delay(int(sound.get_length() * 1000))
-    sound_num += 1
+    for event in pygame.event.get():
+        if event.type == STOP_SOUND_EVENT:
+            print("Completed Stimulus:", f"{RUNNINGVARS['trial_num']}.{RUNNINGVARS['stim_num']}")
+            RUNNINGVARS["running_test"] = False
+            plot_point()
+            pygame.mixer.stop()
 
-    print(DATA)
-    
-    # data_socket()
-
-    # for event in pygame.event.get():
-    #     if event.type == STOP_SOUND_EVENT:
-    #         print("Stopping sound")
-    #         pygame.mixer.stop()
-
-    #     if event.type == RESUME_EVENT:
-    #         print("Resuming...")
-    #         RUNNINGVARS["sound_playing"] = "blank"
-    #         RUNNINGVARS["speaker_side_playing"] = "neither"
-    #         RUNNINGVARS["last_stable_time"] = time.time()
-    #         RUNNINGVARS["running_test"] = False
-    #         RUNNINGVARS["override"] = False
-    
-
-    """
-    Key Presses
-        Space: Pause/Resume
-        Esc: Exit
-        Del: Clear Data
-        Enter: Override Testing
-    """
-    
+    # Key Presses
     if msvcrt.kbhit():
         key = msvcrt.getch()
         if key == b' ':
             print("Paused...")
             RUNNINGVARS["pause"] = True
-        if key == b'\x1b':
+        elif key == b'\x1b':
             print("Exiting...")
             break
-        if key == b'\xe0':
+        elif key == b'\xe0':
             print("Clearing...")
             clear_terminal()
             reset_data()
-        if key == b'\r' and not RUNNINGVARS["running_test"]:
+        elif key == b'\r' and not RUNNINGVARS["running_test"]:
             print("Overriding...")
             RUNNINGVARS["override"] = True
-        
-        key = None
 
-# saveData()
+saveData()
+plt.pause(10)

@@ -1,7 +1,7 @@
 PARAMS = {
 
     ## 
-    "sound_names": ["CanaryAB", "pu995_ABCDEFG"],
+    "sound_names": ["canaryAB", "pu995_ABCDEFG"],
 
     ## 
     "control_sound_path": "test_sounds/ABCD_perry.wav",
@@ -10,7 +10,7 @@ PARAMS = {
     ##
     "min_control_spacer": 2,
     "seq_length": 8,
-    "num_trials": 3,
+    "num_trials": 2,
     
 
 }
