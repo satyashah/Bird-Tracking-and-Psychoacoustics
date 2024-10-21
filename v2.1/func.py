@@ -58,23 +58,35 @@ def plot_bird(cropped_frame, beak_center, angle, red_indices):
     plt.pause(0.00000001)
 
 def plot_point():
-    last_angle_change = get_angle_change(f"{RUNNINGVARS['trial_num']}.{RUNNINGVARS['stim_num']}")
+    if RUNNINGVARS["sound_playing"][0] == "control_pass":
+        return
+
+    stim_code = f"{RUNNINGVARS['trial_num']}.{RUNNINGVARS['stim_num']}"
+    stim_data = DATA[DATA['stim_code'] == stim_code]
+    
+    # Use Either
+    last_angle_change = stim_data['angle'].iloc[-1] - stim_data['angle'].iloc[0]
+    middle_angle = stim_data['angle'].iloc[len(stim_data) // 2]
+
+    plot_data = last_angle_change if PARAMS["data_display"] == "angle_change" else middle_angle
+
     categories = ['control'] + PARAMS["sound_names"]
-    DATA_PLOT.scatter(categories.index(RUNNINGVARS["sound_playing"][0]) + 1, last_angle_change, color="purple")
+    DATA_PLOT.scatter(categories.index(RUNNINGVARS["sound_playing"][0]) + 1, plot_data, color="purple")
 
 def summarize_trial():
-    angle_change_by_code = DATA.groupby('stim_code').agg(
+    data_by_code = DATA.groupby('stim_code').agg(
         duration=('time', lambda x: x.iloc[-1] - x.iloc[0]),
         sound=('sound', 'first'),
-        angle_change=('angle', lambda x: x.iloc[-1] - x.iloc[0])
+        angle_change=('angle', lambda x: x.iloc[-1] - x.iloc[0]),
+        middle_angle=('angle', lambda x: x.iloc[len(x) // 2])
     ).reset_index()
 
     set_data_plots()
     categories = ['control'] + PARAMS["sound_names"]
-    angle_changes = [angle_change_by_code[angle_change_by_code['sound'] == category]['angle_change'] for category in categories]
+    angle_changes = [data_by_code[data_by_code['sound'] == category][PARAMS["data_display"]] for category in categories]
 
     DATA_PLOT.boxplot(angle_changes, labels=categories, showmeans=True)
-    print(angle_change_by_code)
+    print(data_by_code)
 
 # Data
 def get_angle_change(stim_code):
@@ -94,18 +106,6 @@ def record_data():
     }
     global DATA
     DATA = pd.concat([DATA, pd.DataFrame(new_row, index=[0])], ignore_index=True) if not DATA.empty else pd.DataFrame(new_row, index=[0])
-
-def reset_data():
-    global DATA
-    DATA = pd.DataFrame()
-    RUNNINGVARS.update({
-        "sound_playing": "blank",
-        "speaker_side_playing": "neither",
-        "sound_A_count": 0,
-        "sound_B_count": 0,
-        "control_count": 0,
-    })
-    set_data_plots()
 
 # Other Functions
 clear_terminal = lambda: os.system('cls')
@@ -129,15 +129,19 @@ def saveData():
     plt.savefig(f'data/{timestamp}.png')
     DATA.to_csv(f'data/raw_{timestamp}.csv', index=False)
 
+    print(DATA)
+
     clear_terminal()
 
-    angle_change_by_code = DATA.groupby('stim_code').agg(
+    data_by_code = DATA.groupby('stim_code').agg(
         duration=('time', lambda x: x.iloc[-1] - x.iloc[0]),
         sound=('sound', 'first'),
-        angle_change=('angle', lambda x: x.iloc[-1] - x.iloc[0])
+        start_angle=('angle', 'first'),
+        angle_change=('angle', lambda x: x.iloc[-1] - x.iloc[0]),
+        middle_angle=('angle', lambda x: x.iloc[len(x) // 2])
     ).reset_index()
 
-    summarized_data = angle_change_by_code.groupby('sound').agg(
+    summarized_data = data_by_code.groupby('sound').agg(
         mean=('angle_change', 'mean'),
         std=('angle_change', 'std'),
         abs_min=('angle_change', lambda x: x.abs().min()),
@@ -145,7 +149,7 @@ def saveData():
         count=('angle_change', 'count')
     ).reset_index()
 
-    print("\nAngle By Stimulus Code\n", angle_change_by_code)
+    print("\nAngle By Stimulus Code\n", data_by_code)
     print("\nSummarized Angle Change by Stimulus\n", summarized_data)
 
-    DATA.to_csv(f'data/sum_{timestamp}.csv', index=False)
+    data_by_code.to_csv(f'data/sum_{timestamp}.csv', index=False)

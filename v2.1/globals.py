@@ -30,6 +30,7 @@ PARAMS = settings.PARAMS
 RUNNINGVARS = {
     "start_time": time.time(),
     "running_test": False,
+    "pause_between_stims": False,
     "speaker_side_playing": "neither",
     "sound_playing": "blank",
     "trial_num": 0,
@@ -71,7 +72,27 @@ class Feed:
 FEED = Feed(450)  # FRAME_SIZE = 450
 
 # Camera Center Set Up
-FRAME_CENTER = (328, 262)  # Set manually or use set_up_cam()
+def set_up_cam():
+    frame = FEED.get_frame()
+    
+    clicked_coordinates = []  # List to store clicked coordinates
+
+    def onclick(event):
+        if event.inaxes is not None:
+            print(f'Selected Bird Center: ({int(event.xdata)}, {int(event.ydata)})')
+            clicked_coordinates.append((int(event.xdata), int(event.ydata)))  # Append clicked coordinates
+            plt.close()
+
+    plt.title('Click on the Center of Bird')
+    plt.imshow(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), cmap='gray')
+    plt.gcf().canvas.mpl_connect('button_press_event', onclick)
+    plt.show() # Show the plot, wait for the user to click
+
+    # This return is executed after the user clicks and the plot is closed
+    return clicked_coordinates[-1][0], clicked_coordinates[-1][1] # Return the last clicked coordinates
+
+
+FRAME_CENTER = set_up_cam()  # Set manually or use set_up_cam()
 
 # Sound Set Up
 pygame.init()
@@ -87,33 +108,22 @@ for sound_index in range(len(PARAMS["sound_names"])):
 pygame.mixer.Channel(0).set_volume(1.0, 0.0)  # Full volume on left, mute on right
 pygame.mixer.Channel(1).set_volume(0.0, 1.0)  # Mute on left, full volume on right
 
-def build_sound_sequence(SOUNDSET, min_control_spacer, seq_length):
-    if seq_length < (len(SOUNDSET) + 1) * min_control_spacer + len(SOUNDSET):
-        raise ValueError("seq_length too small for desired min_control_spacer")
-
-    control_sound = ("control", control)
-    
-    # Start with the initial control sounds
-    sound_seq = [control_sound] * min_control_spacer
-    
-    other_sounds = [name for name in SOUNDSET if name != "control"]
-
-    # Add each sound with control sounds in between
-    for sound_name in other_sounds:
-        sound_seq.append((sound_name, SOUNDSET[sound_name]))
-        sound_seq.extend([control_sound] * min_control_spacer)
-
-    # If we still need to add control sounds to reach the sequence length
-    while len(sound_seq) < seq_length:
-        ran_insert = random.randint(0, len(sound_seq))
-        sound_seq.insert(ran_insert, control_sound)
-
-    return sound_seq  # Ensure we return exactly seq_length sounds
 
 TRIALS = []
-for trial_num in range(PARAMS["num_trials"]):   
-    sound_sequence = build_sound_sequence(SOUNDSET, PARAMS["min_control_spacer"], PARAMS["seq_length"])
-    TRIALS.append(sound_sequence)
+for i in range(PARAMS["num_trials"]):
+    target_stimulus_name = list(SOUNDSET.keys())[i % len(SOUNDSET)]
+    target_stimulus = SOUNDSET[target_stimulus_name]
+    control_time = random.randint(PARAMS["min_control_time"], PARAMS["max_control_time"])
+    control_num = int(control_time / (control.get_length() + PARAMS["time_between_stimulus"]))
+
+    control_sequence = [("control_pass", control)] * control_num
+    trial_sequence = control_sequence + [("control", control)] + [(target_stimulus_name, target_stimulus)]
+
+    TRIALS.append(trial_sequence)
+
+    print(f"Trial {i + 1}: Target Stimulus: {target_stimulus_name}, Control Time: {control_time} seconds, Control Num: {control_num}")
+
+random.shuffle(TRIALS)
 
 # Create a figure with two subplots and top section
 fig = plt.figure(figsize=(10, 6))
@@ -154,8 +164,6 @@ set_data_plots()
 
 # EVENTS
 STOP_SOUND_EVENT = pygame.USEREVENT + 1
-GET_POINT_EVENT = pygame.USEREVENT + 2
-SUMMARIZE_EVENT = pygame.USEREVENT + 3
 RESUME_EVENT = pygame.USEREVENT + 4
 
 # Threading

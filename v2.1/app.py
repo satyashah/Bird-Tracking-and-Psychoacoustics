@@ -16,7 +16,7 @@ while True:
 
     frame, angle, beak_center, red_indices = display_camara()
     plot_bird(frame, beak_center, angle, red_indices)
-    RUNNINGVARS["cur_angle"] = angle # random.randint(-50, 50)
+    RUNNINGVARS["cur_angle"] = random.randint(-50, 50) # angle
 
     if RUNNINGVARS["pause"]:
         if msvcrt.kbhit():
@@ -25,7 +25,7 @@ while True:
                 RUNNINGVARS["pause"] = False
         continue
 
-    if not RUNNINGVARS["running_test"]:
+    if not RUNNINGVARS["running_test"] and not RUNNINGVARS["pause_between_stims"]:
         RUNNINGVARS["stim_num"] += 1
 
         if RUNNINGVARS["stim_num"] == 0:
@@ -45,7 +45,8 @@ while True:
         RUNNINGVARS["running_test"] = True
         play_sound()
     
-    record_data()
+    if not RUNNINGVARS["pause_between_stims"]:
+        record_data()
 
     for event in pygame.event.get():
         if event.type == STOP_SOUND_EVENT:
@@ -53,6 +54,11 @@ while True:
             RUNNINGVARS["running_test"] = False
             plot_point()
             pygame.mixer.stop()
+            RUNNINGVARS["pause_between_stims"] = True
+            pygame.time.set_timer(RESUME_EVENT, PARAMS["time_between_stimulus"] * 1000, loops=1)
+        if event.type == RESUME_EVENT:
+            RUNNINGVARS["pause_between_stims"] = False
+
 
     # Key Presses
     if msvcrt.kbhit():
@@ -66,10 +72,9 @@ while True:
         elif key == b'\xe0':
             print("Clearing...")
             clear_terminal()
-            reset_data()
         elif key == b'\r' and not RUNNINGVARS["running_test"]:
             print("Overriding...")
             RUNNINGVARS["override"] = True
 
 saveData()
-plt.pause(10)
+plt.pause(1000)
