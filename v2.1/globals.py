@@ -114,7 +114,7 @@ for i in range(PARAMS["num_trials"]):
     target_stimulus_name = list(SOUNDSET.keys())[i % len(SOUNDSET)]
     target_stimulus = SOUNDSET[target_stimulus_name]
     control_time = random.randint(PARAMS["min_control_time"], PARAMS["max_control_time"])
-    control_num = int(control_time / (control.get_length() + PARAMS["time_between_stimulus"]))
+    control_num = int(control_time / (control.get_length() + PARAMS["max_time_between_stimulus"]))
 
     control_sequence = [("control_pass", control)] * control_num
     trial_sequence = control_sequence + [("control", control)] + [(target_stimulus_name, target_stimulus)]

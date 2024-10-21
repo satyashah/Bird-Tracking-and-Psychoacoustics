@@ -16,7 +16,7 @@ while True:
 
     frame, angle, beak_center, red_indices = display_camara()
     plot_bird(frame, beak_center, angle, red_indices)
-    RUNNINGVARS["cur_angle"] = random.randint(-50, 50) # angle
+    RUNNINGVARS["cur_angle"] = angle # random.randint(-50, 50) 
 
     if RUNNINGVARS["pause"]:
         if msvcrt.kbhit():
@@ -28,13 +28,13 @@ while True:
     if not RUNNINGVARS["running_test"] and not RUNNINGVARS["pause_between_stims"]:
         RUNNINGVARS["stim_num"] += 1
 
-        if RUNNINGVARS["stim_num"] == 0:
-            RUNNINGVARS["speaker_side_playing"] = random.choice(["left", "right"])
-
         if RUNNINGVARS["stim_num"] == len(TRIALS[RUNNINGVARS["trial_num"]]):
             RUNNINGVARS["stim_num"] = 0
             RUNNINGVARS["trial_num"] += 1
             summarize_trial()
+        
+        if RUNNINGVARS["stim_num"] == 0:
+            RUNNINGVARS["speaker_side_playing"] = random.choice(PARAMS["speaker_sides"])
 
         if RUNNINGVARS["trial_num"] == len(TRIALS):
             write2plot("Complete")
@@ -55,7 +55,7 @@ while True:
             plot_point()
             pygame.mixer.stop()
             RUNNINGVARS["pause_between_stims"] = True
-            pygame.time.set_timer(RESUME_EVENT, PARAMS["time_between_stimulus"] * 1000, loops=1)
+            pygame.time.set_timer(RESUME_EVENT, random.randint(PARAMS["min_time_between_stimulus"], PARAMS["max_time_between_stimulus"]) * 1000, loops=1)
         if event.type == RESUME_EVENT:
             RUNNINGVARS["pause_between_stims"] = False
 
