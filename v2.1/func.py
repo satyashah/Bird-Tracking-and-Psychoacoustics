@@ -5,11 +5,11 @@ def play_sound():
     pygame.mixer.stop()
     channel = 0 if RUNNINGVARS["speaker_side_playing"] == "left" else 1
 
-    pygame.mixer.Channel(channel).play(RUNNINGVARS["sound_playing"][1], loops=-1)
+    pygame.mixer.Channel(channel).play(RUNNINGVARS["sound_playing"][1], loops=1)
     pygame.mixer.Channel(0).set_volume(1.0, 0.0)  # Full volume on left
     pygame.mixer.Channel(1).set_volume(0.0, 1.0)  # Full volume on right
 
-    pygame.time.set_timer(STOP_SOUND_EVENT, int(RUNNINGVARS["sound_playing"][1].get_length() * 1000), loops=1)
+    pygame.time.set_timer(STOP_SOUND_EVENT, int(RUNNINGVARS["sound_playing"][1].get_length() * 1000) + PARAMS["collection_delay"], loops=1)
 
 # Frame
 def get_beak_center(frame):
