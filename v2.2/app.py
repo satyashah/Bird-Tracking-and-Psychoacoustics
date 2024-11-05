@@ -12,11 +12,11 @@ while True:
     if RUNNINGVARS["pause"]:
         write2plot("Paused... Press Space on Terminal to Resume")
     else:
-        write2plot(f"Playing {RUNNINGVARS['sound_playing'][0]} from {RUNNINGVARS['speaker_side_playing']} side")
+        write2plot(f"{RUNNINGVARS['sound_playing'][0].upper()} : {RUNNINGVARS['speaker_side_playing'].upper()}")
 
     frame, angle, beak_center, red_indices = display_camara()
     plot_bird(frame, beak_center, angle, red_indices)
-    RUNNINGVARS["cur_angle"] = angle # random.randint(-50, 50) 
+    RUNNINGVARS["cur_angle"] = RUNNINGVARS["cur_angle"] + random.randint(-5, 5) #RUNNINGVARS["cur_angle"] + random.randint(-5, 5) // angle
 
     if RUNNINGVARS["pause"]:
         if msvcrt.kbhit():
@@ -25,56 +25,67 @@ while True:
                 RUNNINGVARS["pause"] = False
         continue
 
-    if not RUNNINGVARS["running_test"] and not RUNNINGVARS["pause_between_stims"]:
-        RUNNINGVARS["stim_num"] += 1
-
-        if RUNNINGVARS["stim_num"] == len(TRIALS[RUNNINGVARS["trial_num"]]):
-            RUNNINGVARS["stim_num"] = 0
-            RUNNINGVARS["trial_num"] += 1
-            summarize_trial()
-        
-        if RUNNINGVARS["stim_num"] == 0:
-            RUNNINGVARS["speaker_side_playing"] = random.choice(PARAMS["speaker_sides"])
-
-        if RUNNINGVARS["trial_num"] == len(TRIALS):
-            write2plot("Complete")
-            break
-        
-        RUNNINGVARS["sound_playing"] = TRIALS[RUNNINGVARS["trial_num"]][RUNNINGVARS["stim_num"]]
-        print("Playing", RUNNINGVARS["sound_playing"][0], "from", RUNNINGVARS["speaker_side_playing"], "side")
-        RUNNINGVARS["running_test"] = True
-        play_sound()
-    
-    if not RUNNINGVARS["pause_between_stims"]:
-        record_data()
-
-    for event in pygame.event.get():
-        if event.type == STOP_SOUND_EVENT:
-            print("Completed Stimulus:", f"{RUNNINGVARS['trial_num']}.{RUNNINGVARS['stim_num']}")
-            RUNNINGVARS["running_test"] = False
-            plot_point()
-            pygame.mixer.stop()
-            RUNNINGVARS["pause_between_stims"] = True
-            pygame.time.set_timer(RESUME_EVENT, random.randint(PARAMS["min_time_between_stimulus"], PARAMS["max_time_between_stimulus"]) * 1000, loops=1)
-        if event.type == RESUME_EVENT:
-            RUNNINGVARS["pause_between_stims"] = False
-
-
     # Key Presses
     if msvcrt.kbhit():
         key = msvcrt.getch()
-        if key == b' ':
+        
+        if key == b'l':
+            print("Speaker Changed to Left")
+            RUNNINGVARS["speaker_side_playing"] = "left"
+        elif key == b'r':
+            print("Speaker Changed to Right")
+            RUNNINGVARS["speaker_side_playing"] = "right"
+
+        if key.isdigit():
+            digit = key.decode()
+
+            if int(digit) > len(SOUNDSET):
+                print(f"Invalid Sound Number: {digit}")
+                continue
+
+            if int(digit) == 0:
+                print(f"{digit}:control Pressed")
+                RUNNINGVARS["sound_playing"] = ("control", pygame.mixer.Sound(PARAMS["control_sound_path"]))
+            else:
+                sound_name = list(SOUNDSET.keys())[int(digit) - 1]
+                print(f"{digit}:{sound_name} Pressed")
+
+                RUNNINGVARS["sound_playing"] = (sound_name, SOUNDSET[sound_name])
+            
+            set_data_plots()
+            RUNNINGVARS["trial_num"] += 1
+            play_sound()
+            
+
+        # Functional Keys
+        elif key == b'x':
+            print("Marking Data For Exclusion...")
+            mark_data()
+        elif key == b' ':
             print("Paused...")
             RUNNINGVARS["pause"] = True
         elif key == b'\x1b':
             print("Exiting...")
+            set_data_plots()
+            average_polynomial_curve()
             break
         elif key == b'\xe0':
             print("Clearing...")
             clear_terminal()
-        elif key == b'\r' and not RUNNINGVARS["running_test"]:
-            print("Overriding...")
-            RUNNINGVARS["override"] = True
+
+    if RUNNINGVARS["sound_playing"][0] != "blank":
+        record_data()
+        plot_point()
+        
+    
+    for event in pygame.event.get():
+        if event.type == STOP_SOUND_EVENT:
+            summarize_trial()
+            print("Completed Trail:", f"{RUNNINGVARS['trial_num']}:{RUNNINGVARS['sound_playing'][0]}\n")
+            RUNNINGVARS['sound_playing'] = ("blank", None)
+            pygame.mixer.stop()
+            
+
 
 saveData()
 plt.pause(1000)

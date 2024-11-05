@@ -13,6 +13,7 @@ from queue import Queue
 import msvcrt
 import datetime
 import settings
+from numpy import polyfit
 
 global PARAMS
 global RUNNINGVARS
@@ -29,12 +30,9 @@ PARAMS = settings.PARAMS
 # SYSTEM VARS
 RUNNINGVARS = {
     "start_time": time.time(),
-    "running_test": False,
-    "pause_between_stims": False,
-    "speaker_side_playing": "neither",
-    "sound_playing": "blank",
+    "speaker_side_playing": "left",
+    "sound_playing": ("blank", None),
     "trial_num": 0,
-    "stim_num": -1,
     "cur_angle": 0,
     "pause": True,
     "cam_center": (0, 0),
@@ -92,14 +90,13 @@ def set_up_cam():
     return clicked_coordinates[-1][0], clicked_coordinates[-1][1] # Return the last clicked coordinates
 
 
-FRAME_CENTER = set_up_cam()  # Set manually or use set_up_cam()
+FRAME_CENTER = set_up_cam() # Set manually (300,200) or use set_up_cam()
 
 # Sound Set Up
 pygame.init()
 pygame.mixer.init(channels=2)
 
 SOUNDSET = {}
-control = pygame.mixer.Sound(PARAMS["control_sound_path"])
 for sound_index in range(len(PARAMS["sound_names"])):
     name = PARAMS["sound_names"][sound_index]
     path = PARAMS["sound_paths"][sound_index]
@@ -108,22 +105,6 @@ for sound_index in range(len(PARAMS["sound_names"])):
 pygame.mixer.Channel(0).set_volume(1.0, 0.0)  # Full volume on left, mute on right
 pygame.mixer.Channel(1).set_volume(0.0, 1.0)  # Mute on left, full volume on right
 
-
-TRIALS = []
-for i in range(PARAMS["num_trials"]):
-    target_stimulus_name = list(SOUNDSET.keys())[i % len(SOUNDSET)]
-    target_stimulus = SOUNDSET[target_stimulus_name]
-    control_time = random.randint(PARAMS["min_control_time"], PARAMS["max_control_time"])
-    control_num = int(control_time / (control.get_length() + PARAMS["max_time_between_stimulus"]))
-
-    control_sequence = [("control_pass", control)] * control_num
-    trial_sequence = control_sequence + [("control", control)] + [(target_stimulus_name, target_stimulus)]
-
-    TRIALS.append(trial_sequence)
-
-    print(f"Trial {i + 1}: Target Stimulus: {target_stimulus_name}, Control Time: {control_time} seconds, Control Num: {control_num}")
-
-random.shuffle(TRIALS)
 
 # Create a figure with two subplots and top section
 fig = plt.figure(figsize=(10, 6))
@@ -147,24 +128,16 @@ def on_click(event):
 plt.connect('button_press_event', on_click)
 
 def set_data_plots():
-    categories = ['control'] + PARAMS["sound_names"]
-    y_values = [[0] for _ in categories]  # Initialize y_values with a list of lists, one for each category
-    
     DATA_PLOT.clear()
-    box = DATA_PLOT.boxplot(y_values, labels=categories)
-
-    for element in ['boxes', 'whiskers', 'fliers', 'medians', 'caps']:
-        plt.setp(box[element], color='none')
-
-    DATA_PLOT.set_ylim(-145, 145)
+    DATA_PLOT.set_ylim(-45, 45)
     DATA_PLOT.set_ylabel('Movement (degrees)')
+    DATA_PLOT.set_xlabel('Time (s)')
     DATA_PLOT.set_title('Movement Per Sound')
 
 set_data_plots()
 
 # EVENTS
 STOP_SOUND_EVENT = pygame.USEREVENT + 1
-RESUME_EVENT = pygame.USEREVENT + 4
 
 # Threading
 DATA_BUS = Queue()
