@@ -16,7 +16,7 @@ while True:
 
     frame, angle, beak_center, red_indices = display_camara()
     plot_bird(frame, beak_center, angle, red_indices)
-    RUNNINGVARS["cur_angle"] = RUNNINGVARS["cur_angle"] + random.randint(-5, 5) #RUNNINGVARS["cur_angle"] + random.randint(-5, 5) // angle
+    RUNNINGVARS["cur_angle"] = angle #RUNNINGVARS["cur_angle"] + random.randint(-5, 5) // angle
 
     if RUNNINGVARS["pause"]:
         if msvcrt.kbhit():

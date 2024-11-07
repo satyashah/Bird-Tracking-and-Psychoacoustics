@@ -15,12 +15,11 @@ def play_sound():
 def get_beak_center(frame):
     """ Returns the center of the beak from the frame. """
     lower_red_bgr = np.array([0, 0, 70])
-    upper_red_bgr = np.array([50, 30, 255])
+    upper_red_bgr = np.array([40, 25, 255])
 
     mask = cv2.inRange(frame, lower_red_bgr, upper_red_bgr)
     red_indices = np.where(mask != 0)
-    print(red_indices[0].size)
-    if red_indices[0].size > 50: # Addition of Min Surface area: != 0:
+    if red_indices[0].size > 30: # Addition of Min Surface area: != 0:
         median_x = np.median(red_indices[1])
         median_y = np.median(red_indices[0])
     else:
@@ -52,7 +51,7 @@ def plot_bird(cropped_frame, beak_center, angle, red_indices):
         CAM_PLOT.plot([RUNNINGVARS["cam_center"][0], beak_center[0]], 
                       [RUNNINGVARS["cam_center"][1], beak_center[1]], c='r')
         CAM_PLOT.scatter(beak_center[0], beak_center[1], c='r')
-        CAM_PLOT.text(280, 50, f'Ang: {angle:.2f}\nX: {beak_center[0] - FEED.frame_size//2:.2f}', 
+        CAM_PLOT.text(80, 50, f'Ang: {angle:.2f}\nX: {beak_center[0] - FEED.frame_size//2:.2f}', 
                       color='black', fontsize=12, backgroundcolor='white')
     
     plt.pause(0.00000001)

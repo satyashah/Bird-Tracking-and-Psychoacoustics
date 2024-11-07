@@ -67,7 +67,7 @@ class Feed:
 
         return cropped_frame
 
-FEED = Feed(450)  # FRAME_SIZE = 450
+FEED = Feed(150)  # FRAME_SIZE = 450
 
 # Camera Center Set Up
 def set_up_cam():
