@@ -11,11 +11,12 @@ PARAMS = {
     "max_sound_delay" : 5000, # Maximum Delay in ms between sounds (must be greater than collection_delay)
 
     # If you want only manual targets set the following to 0
+    "auto_sounds": True, # If true, sounds are played automatically
     "target_prob": 30,  # Probabilty % the target sound is played
 
     "angle_type": "relative",  # "absolute" or "relative" angle of the bird
 
-    "stab_thresh": 20, # minimum deviation of bird movement to be considered stable
+    "stab_thresh": 5, # minimum deviation of bird movement to be considered stable
  
 }
 

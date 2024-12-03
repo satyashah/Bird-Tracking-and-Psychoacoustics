@@ -20,6 +20,7 @@ while True:
     plot_bird(frame, beak_center, angle, red_indices)
     RUNNINGVARS["cur_angle"] = angle # RUNNINGVARS["cur_angle"] + random.randint(-10, 10) // angle
     ANGLE_HISTORY.append(RUNNINGVARS["cur_angle"])
+    isTesting = not (RUNNINGVARS['sound_playing'][0] == 'blank')
 
     # Pause Check
     if RUNNINGVARS["pause"]:
@@ -32,22 +33,17 @@ while True:
         continue
 
     # Stability Check
-    if not RUNNINGVARS["is_stable"]:
+    if not isTesting and not RUNNINGVARS["is_stable"]:
+        print("UNSTABLE BIRD")
         if isStable():
-            print("Resume...\n")
+            print("STABLIZED\n")
             RUNNINGVARS["is_stable"] = True
             pygame.event.clear()
             pygame.time.set_timer(PLAY_SOUND_EVENT, 5000, loops=0)
         continue
 
-    RUNNINGVARS["is_stable"] = isStable()
-    if not RUNNINGVARS["is_stable"]:
-        print("UNSTABLE BIRD")
-
-    
-
     # Key Presses
-    if  msvcrt.kbhit():
+    if not isTesting and msvcrt.kbhit():
         key = msvcrt.getch()
         
         # Direction Keys
@@ -68,6 +64,7 @@ while True:
             for event_type in range(pygame.USEREVENT, pygame.NUMEVENTS):
                 pygame.time.set_timer(event_type, 0)
             pygame.event.clear()
+            
             print("MANUAL EVENT")
 
             if int(digit) == 0:
@@ -104,6 +101,9 @@ while True:
     
     for event in pygame.event.get():
         if event.type == PLAY_SOUND_EVENT:
+
+            if not PARAMS["auto_sounds"]:
+                continue
 
             print("AUTO EVENT")
             
