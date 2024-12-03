@@ -8,8 +8,6 @@ starttime = time.time()
 clear_terminal()  # Clear terminal
 print("Paused... Press Space here to Resume")
 
-
-
 while True:
     if RUNNINGVARS["pause"]:
         write2plot("Paused... Press Space on Terminal to Resume")
@@ -64,7 +62,7 @@ while True:
             for event_type in range(pygame.USEREVENT, pygame.NUMEVENTS):
                 pygame.time.set_timer(event_type, 0)
             pygame.event.clear()
-            
+
             print("MANUAL EVENT")
 
             if int(digit) == 0:

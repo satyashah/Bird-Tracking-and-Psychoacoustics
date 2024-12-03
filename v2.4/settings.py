@@ -12,12 +12,11 @@ PARAMS = {
 
     # If you want only manual targets set the following to 0
     "auto_sounds": True, # If true, sounds are played automatically
-    "target_prob": 30,  # Probabilty % the target sound is played
+    "target_prob": 10,  # Probabilty % the target sound is played
 
     "angle_type": "relative",  # "absolute" or "relative" angle of the bird
 
     "stab_thresh": 5, # minimum deviation of bird movement to be considered stable
- 
 }
 
 # Fix 109 Globals
